@@ -15,8 +15,7 @@ var seaweedPort = argv.seaweedPort || 9333;
 var thonkIP = argv.thonkIP || "localhost";
 var thonkPort = argv.thonkPort || 28015;
 
-//var workQueue = new Queue('work', {redis: {port: 12000, host: '172.17.0.2'}, prefix:'{myprefix}'});
-var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}});
+var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}, prefix:'{myprefix}'});
 
 const seaweedfs = new weedClient({
     server: seaweedIP,

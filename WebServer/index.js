@@ -12,7 +12,7 @@ const cookieMiddleware = require('./middleware/userCookie');
 const weedClient = require("@wabg/node-seaweedfs");
 
 var hostPort = argv.hostPort || 8008;
-var HOST = '0.0.0.0';
+var hostIP =  argv.hostIP || '0.0.0.0';
 
 var redisIP = argv.redisIP || "localhost";
 var redisPort = argv.redisPort || 6379;
@@ -25,11 +25,14 @@ var thonkPort = argv.thonkPort || 28015;
 
 
 var Queue = require('bull');
-//var cluster = require('cluster')
+
+
+
 //const SwiftClient = require('openstack-swift-client');
 
 //var workQueue = new Queue('work', {redis: {port: 12000, host: '172.17.0.2'}, prefix:'{myprefix}'});
-var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}});
+var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}, prefix:'{myprefix}'});
+
 
 app.use(bodyParser.urlencoded({extended : true}));
 app.use(bodyParser.json());
@@ -123,8 +126,7 @@ app.post('/file-upload', upload.single('file'), (req, res) => {
         });
 
 
-        res.writeHead(200, { 'Connection': 'close' });
-        res.end("That's all folks! "+req.cookies._uid);
+        res.redirect('downloads');
     }else{
         res.json({
             uploaded : false
@@ -192,5 +194,5 @@ app.get('/test', function(request, response) {
     });
 });
 
-app.listen(hostPort, HOST);
-console.log(`Running on http://${HOST}:${hostPort}`);
+app.listen(hostPort, hostIP);
+console.log(`Running on http://${hostIP}:${hostPort}`);

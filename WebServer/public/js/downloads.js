@@ -1,14 +1,19 @@
 
 async function getDownloadList() {
-    console.log("BUTTON WORKS")
+    console.log("BUTTON WORKS");
     const response = await fetch(location.protocol + '//' + location.host + '/downloadList');
     const myJson = await response.json();
     console.log(myJson);
     document.getElementById("downloadLinkContainer").innerHTML = "";
     myJson.forEach(element => {
             console.log(element);
-            document.getElementById("downloadLinkContainer").innerHTML += element.fileInfo.filename;
-            document.getElementById("downloadLinkContainer").innerHTML += '<button onClick="downloadFile(\''+element.fileInfo.id.fid+'\',\''+element.fileInfo.filename+'\')">download</button>';
+            if(element.jobFinished === -1){
+                document.getElementById("downloadLinkContainer").innerHTML += "TEMP";
+            }
+            else{
+                document.getElementById("downloadLinkContainer").innerHTML += element.fileInfo.filename;
+                document.getElementById("downloadLinkContainer").innerHTML += '<button onClick="downloadFile(\''+element.fileInfo.id.fid+'\',\''+element.fileInfo.filename+'\')">download</button>';
+            }
         }
     );
 }
