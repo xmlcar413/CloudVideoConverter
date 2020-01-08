@@ -4,18 +4,24 @@ async function getDownloadList() {
     const response = await fetch(location.protocol + '//' + location.host + '/downloadList');
     const myJson = await response.json();
     console.log(myJson);
-    document.getElementById("downloadLinkContainer").innerHTML = "";
+    var text = '';
+    text = '<ul style="list-style-type:none;">';
     myJson.forEach(element => {
-            console.log(element);
-            if(element.jobFinished === -1){
-                document.getElementById("downloadLinkContainer").innerHTML += "TEMP";
-            }
-            else{
-                document.getElementById("downloadLinkContainer").innerHTML += element.fileInfo.filename;
-                document.getElementById("downloadLinkContainer").innerHTML += '<button onClick="downloadFile(\''+element.fileInfo.id.fid+'\',\''+element.fileInfo.filename+'\')">download</button>';
-            }
+        console.log(element);
+        text += '<li>';
+        if(element.jobFinished === -1){
+            text += '<p>TEMP</p>';
+            text += '<p>Status: '+element.state+'</p>';
         }
-    );
+        else{
+            text += '<p>'+element.fileInfo.filename+'</p>';
+            text += '<button onClick="downloadFile(\''+element.fileInfo.id.fid+'\',\''+element.fileInfo.filename+'\')">download</button>';
+            text += '<p>Status: '+element.state+'</p>';
+        }
+        text += '</li>';
+    });
+    text += '</ul>';
+    document.getElementById("downloadLinkContainer").innerHTML = text;
 }
 
 async function downloadFile(fileID, filename) {
