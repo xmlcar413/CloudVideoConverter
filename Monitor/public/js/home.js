@@ -2,7 +2,7 @@
 
 async function getVMList() {
     console.log("BUTTON WORKS")
-    const response = await fetch('http://localhost:3000/list-vm');
+    const response = await fetch(location.protocol + '//' + location.host +  '/list-vm');
     const myJson = await response.json();
     console.log(myJson);
     document.getElementById("vm-container").innerHTML = "";
@@ -11,11 +11,19 @@ async function getVMList() {
             document.getElementById("vm-container").innerHTML += element.id + ' at ' +  element.zone.name;
             document.getElementById("vm-container").innerHTML += '<button onClick="deleteVM(\''+element.id+'\',\''+element.zone.name+'\')">delete</button>';
         }
-
     );
 }
 
 async function updateCharts(){
+
+    const response = await fetch(location.protocol + '//' + location.host + '/downloadList')
+        .then((response) => {
+        return response.json();
+        }).then((myJson) => {
+            console.log(myJson);
+        });
+
+
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -63,7 +71,7 @@ async function updateCharts(){
 async  function deleteVM(name, zone) {
     console.log(name)
     console.log(zone)
-    const response = await fetch('http://localhost:3000/delete-vm', {
+    const response = await fetch(location.protocol + '//' + location.host +'/delete-vm', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
