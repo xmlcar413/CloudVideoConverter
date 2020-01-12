@@ -181,6 +181,24 @@ const monitorConfig = {
             {
                 key: 'startup-script',
                 value: `#! /bin/bash
+
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        
+                       
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/Monitor
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        
+                        cd NSA
+                        npm install
+                        start node index.js
+                        
+                        cd ..
+                        cd Monitor
+                        
+
                 `
             },
         ],

@@ -189,7 +189,7 @@ async function collectData() {
             for (const vm of vms[0]) {
                 console.log(vm.id);
                 console.log(vm.metadata.networkInterfaces[0].networkIP);
-                http.get(vm.metadata.networkInterfaces[0].networkIP+ ':12000/data', (resp) => {
+                http.get('http://'+vm.metadata.networkInterfaces[0].networkIP+ ':12000/data', (resp) => {
                     let resData = '';
 
                     // A chunk of data has been recieved.
@@ -200,7 +200,7 @@ async function collectData() {
                     // The whole response has been received. Print out the result.
                     resp.on('end', () => {
                         vmsStats[vm.id] = {data: JSON.parse(resData), date: Date.now()};
-                        console.log(JSON.parse(resData));
+                        //console.log(JSON.parse(resData));
                     });
 
                 }).on("error", (err) => {
