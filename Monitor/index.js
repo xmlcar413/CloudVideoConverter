@@ -55,8 +55,8 @@ app.post('/start-vm',function(request, response) {
         (async () => {
             try {
                 var zone = compute.zone('europe-west4-b');
-                const vm = zone.vm('worker1');
-                const data = await vm.create(instancesConfig.worker);
+                const vm = zone.vm('monitor');
+                const data = await vm.create(instancesConfig.monitor);
                 const operation = data[1];
                 await operation.promise();
 
