@@ -25,6 +25,12 @@ var thonkIP2 = argv.thonkIP2 || "localhost";
 var thonkIP3 = argv.thonkIP3 || "localhost";
 var thonkPort = argv.thonkPort || 28015;
 
+console.log("THESESE ARE THE IP THAT SHOULD WORKS");
+console.log(thonkIP1);
+console.log(thonkIP2);
+console.log(thonkIP3);
+
+
 var thonkCluster = [{host: thonkIP1, port: thonkPort} ,{host: thonkIP2, port: thonkPort},{host: thonkIP3, port: thonkPort}];
 var thonkTableOptions =  {shards: 1, replicas: 3};
 
