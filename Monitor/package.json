@@ -16,5 +16,8 @@
     "express-session": "^1.17.0",
     "gcp-metadata": "^3.2.2",
     "yargs": "^15.0.2"
+  },
+  "devDependencies": {
+    "uuid": "^3.3.3"
   }
 }

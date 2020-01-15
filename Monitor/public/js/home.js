@@ -1,5 +1,3 @@
-
-
 async function getVMList() {
     console.log("BUTTON WORKS")
     const response = await fetch(location.protocol + '//' + location.host +  '/list-vm');
@@ -13,17 +11,238 @@ async function getVMList() {
         }
     );
 }
+async function startMonitor() {
+    console.log("BUTTON WORKS")
+    const response = await fetch(location.protocol + '//' + location.host +  '/start-monitor');
+    const myJson = await response.json();
+}
+
+var cpuChartOptions = {
+    title: {
+        display: true,
+        text: 'Cpu usage (%)'
+    },
+    scales: {
+        xAxes: [{
+            type:       "time",
+            time:       {
+                parser: "epoch",
+                tooltipFormat: 'll'
+            },
+            scaleLabel: {
+                display:     true,
+                labelString: 'Date'
+            }
+        }],
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+                max: 100
+            }
+        }]
+    }
+};
+var driveChartOptions = {
+    title: {
+        display: true,
+        text: 'Used disk(%)'
+    },
+    scales: {
+        xAxes: [{
+            type:       "time",
+            time:       {
+                parser: "epoch",
+                tooltipFormat: 'll'
+            },
+            scaleLabel: {
+                display:     true,
+                labelString: 'Date'
+            }
+        }],
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+                max: 100
+            }
+        }]
+    }
+};
+var memChartOptions = {
+    title: {
+        display: true,
+        text: 'Used mem(%)'
+    },
+    scales: {
+        xAxes: [{
+            type:       "time",
+            time:       {
+                parser: "epoch",
+                tooltipFormat: 'll'
+            },
+            scaleLabel: {
+                display:     true,
+                labelString: 'Date'
+            }
+        }],
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+                max: 100
+            }
+        }]
+    }
+};
+var procChartOptions = {
+    title: {
+        display: true,
+        text: 'Number of open process'
+    },
+    scales: {
+        xAxes: [{
+            type:       "time",
+            time:       {
+                parser: "epoch",
+                tooltipFormat: 'll'
+            },
+            scaleLabel: {
+                display:     true,
+                labelString: 'Date'
+            }
+        }],
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+            }
+        }]
+    }
+};
+
+var ctxCPU = document.getElementById('cpuChart').getContext('2d');
+var ctxDrive = document.getElementById('driveChart').getContext('2d');
+var ctxMem = document.getElementById('memChart').getContext('2d');
+var ctxProc = document.getElementById('procChart').getContext('2d');
+
+let cpuChart = new Chart(ctxCPU, {
+    type: 'line',
+    data: {
+        datasets: []
+    },
+    options: cpuChartOptions
+});
+let driveChart = new Chart(ctxDrive, {
+    type: 'line',
+    data: {
+        datasets: []
+    },
+    options: driveChartOptions
+});
+let memChart = new Chart(ctxMem, {
+    type: 'line',
+    data: {
+        datasets: []
+    },
+    options: memChartOptions
+});
+let procChart = new Chart(ctxProc, {
+    type: 'line',
+    data: {
+        datasets: []
+    },
+    options: procChartOptions
+});
 
 async function updateCharts(){
 
-    const response = await fetch(location.protocol + '//' + location.host + '/downloadList')
+    const response = await fetch(location.protocol + '//' + location.host + '/vm-data')
         .then((response) => {
         return response.json();
         }).then((myJson) => {
             console.log(myJson);
+            var cpuDataset = [];
+            var driveDataset = [];
+            var memDataset = [];
+            var procDataset = [];
+
+
+            Object.keys(myJson).forEach(function (key) {
+                var cpuUsage = myJson[key].data.cpuUsage;
+                var driveInfo = myJson[key].data.driveInfo;
+                var memInfo = myJson[key].data.memInfo;
+                var procOpen = myJson[key].data.procOpen;
+
+                var cpuSet = {
+                    label: key,
+                    data: [],
+                    backgroundColor: dynamicColors()
+                };
+                var driveSet = {
+                    label: key,
+                    data: [],
+                    backgroundColor: dynamicColors()
+                };
+                var memSet = {
+                    label: key,
+                    data: [],
+                    backgroundColor: dynamicColors()
+                };
+                var procSet = {
+                    label: key,
+                    data: [],
+                    backgroundColor: dynamicColors()
+                };
+
+                Object.keys(cpuUsage).forEach(function (cpuDate) {
+                    cpuSet.data.push({x:parseInt(cpuDate), y: cpuUsage[cpuDate]});
+                });
+                Object.keys(driveInfo).forEach(function (driveDate) {
+                    driveSet.data.push({x:parseInt(driveDate), y: driveInfo[driveDate].usedPercentage});
+                });
+                Object.keys(memInfo).forEach(function (memDate) {
+                    memSet.data.push({x:parseInt(memDate), y: memInfo[memDate].freeMemPercentage});
+                });
+                Object.keys(procOpen).forEach(function (procDate) {
+                    procSet.data.push({x:parseInt(procDate), y: procOpen[procDate]});
+                });
+                cpuDataset.push(cpuSet);
+                driveDataset.push(driveSet);
+                memDataset.push(memSet);
+                procDataset.push(procSet);
+            });
+            cpuDataset.push({
+                label: 'cpu 2',
+                data: [{
+                    x: 1576103014178,
+                    y: 1
+                }, {
+                    x: 1576103024178,
+                    y: 10
+                }, {
+                    x: 1576103034180,
+                    y: 5
+                }]
+
+            });
+
+            console.log(cpuDataset);
+            console.log(driveDataset);
+            console.log(memDataset);
+            console.log(procDataset);
+
+            cpuChart.data.datasets = cpuDataset;
+            cpuChart.update();
+
+            driveChart.data.datasets = driveDataset;
+            driveChart.update();
+
+            memChart.data.datasets = memDataset;
+            memChart.update();
+
+            procChart.data.datasets = procDataset;
+            procChart.update();
+
         });
 
-
+/*
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -65,7 +284,14 @@ async function updateCharts(){
                 }]
             }
         }
-    });
+    });*/
+}
+
+var dynamicColors = function() {
+    var r = Math.floor(Math.random() * 255);
+    var g = Math.floor(Math.random() * 255);
+    var b = Math.floor(Math.random() * 255);
+    return "rgb(" + r + "," + g + "," + b + ",0.1)";
 }
 
 async  function deleteVM(name, zone) {
@@ -81,31 +307,3 @@ async  function deleteVM(name, zone) {
     });
     const myJson = await response.json();
 }
-
-var ctx = document.getElementById('myChart').getContext('2d');
-var myChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-        datasets: [
-            {
-                label: 'cpu 2',
-                data: [12, 40, 3, 32, 2, 3],
-            },
-            {
-                label: 'cpu 1',
-                data: [11, 19, 3, 5, 3, 9],
-            },
-        ]
-    },
-    options: {
-        scales: {
-            yAxes: [{
-                ticks: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            }]
-        }
-    }
-});

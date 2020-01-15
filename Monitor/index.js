@@ -1,4 +1,5 @@
 const argv = require('yargs').argv;
+const uuidv4 = require('uuid/v4');
 var express = require('express');
 var session = require('express-session');
 const http = require('http');
@@ -7,6 +8,7 @@ var path = require('path');
 var instancesConfig = require('./Instances/instances');
 const Compute = require('@google-cloud/compute');
 const gcpMetadata = require('gcp-metadata');
+var fs = require('fs')
 const compute = new Compute();
 
 let masterPassword = argv.masterPassword ||'admin';
@@ -76,19 +78,47 @@ app.post('/start-vm',function(request, response) {
     }
 });
 
+app.post('/start-monitor',function(request, response) {
+    if (request.session.loggedin) {
+        (async () => {
+            try {
+                var zone = compute.zone('europe-west4-b');
+                const vm = zone.vm('monitor-1');
+                var cred = JSON.parse(fs.readFileSync('./cred.json', 'utf8'));
+                const data = await vm.create(instancesConfig.monitor("bobthebuilder","asdqwe123",cred));
+                const operation = data[1];
+                await operation.promise();
+
+                // External IP of the VM.
+                const metadata = await vm.getMetadata();
+                const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                const ip2 = metadata[0].networkInterfaces[0].networkIP;
+                console.log(`Booting new VM with IP http://${ip}...`);
+                console.log(`Booting new VM with local IP http://${ip2}...`);
+            } catch (error) {
+                console.error(error);
+            }
+        })();
+    } else {
+        response.send('Please login to view this page!');
+        response.end();
+    }
+});
+
 
 
 app.post('/start-2',function(request, response) {
     if (request.session.loggedin) {
         (async () => {
             try {
-                var zone = compute.zone('europe-west4-b');
+                var zone = compute.zone('europe-west4-a');
 
-                var vm = zone.vm('web-server');
-                await vm.create(instancesConfig.webServer);
+                vm = zone.vm('web-server-'+uuidv4());
+                await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1));
 
-                vm = zone.vm('worker-1');
-                await vm.create(instancesConfig.worker);
+                //WORKER
+                vm = zone.vm('worker-'+uuidv4());
+                await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1));
 
 
             } catch (error) {
@@ -105,21 +135,56 @@ app.post('/start-complete-set',function(request, response) {
     if (request.session.loggedin) {
         (async () => {
             try {
-                var zone = compute.zone('europe-west4-b');
+                var zone = compute.zone('europe-west4-a');
 
-
-                var vm = zone.vm('weed-master');
-                await vm.create(instancesConfig.weedMaster);
-
-                vm = zone.vm('weed-volume');
-                await vm.create(instancesConfig.weedVolume);
-
-                vm = zone.vm('redis-1');
-                await vm.create(instancesConfig.redis);
-
+                //THONK SET UP
                 vm = zone.vm('thonk-1');
-                await vm.create(instancesConfig.rethink);
+                await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, true));
 
+                vm = zone.vm('thonk-2');
+                await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_3));
+
+                vm = zone.vm('thonk-3');
+                await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_3, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_1));
+
+
+                //WEED SET UP
+                vm = zone.vm('weed-master-1');
+                await vm.create(instancesConfig.weedMaster(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3, true));
+
+                vm = zone.vm('weed-master-2');
+                await vm.create(instancesConfig.weedMaster(instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_3));
+
+                vm = zone.vm('weed-master-3');
+                await vm.create(instancesConfig.weedMaster(instancesConfig.WEED_MASTER_IP_3, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_1));
+
+
+                vm = zone.vm('weed-volume-'+uuidv4());
+                await vm.create(instancesConfig.weedVolume(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+
+                vm = zone.vm('weed-volume-'+uuidv4());
+                await vm.create(instancesConfig.weedVolume(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+
+                vm = zone.vm('weed-volume-'+uuidv4());
+                await vm.create(instancesConfig.weedVolume(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+
+
+                //REDIS
+                vm = zone.vm('redis-1');
+                await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
+
+                await new Promise(r => setTimeout(r, 20000));
+
+                //WEB SERVER
+                vm = zone.vm('web-server-'+uuidv4());
+                await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1));
+                //TODO ADD TO HAPROXY
+
+                //WORKER
+                vm = zone.vm('worker-'+uuidv4());
+                await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1));
+
+                response.end();
             } catch (error) {
                 console.error(error);
             }
@@ -134,10 +199,9 @@ app.post('/delete-vm',function(request, response) {
     if (request.session.loggedin) {
         (async () => {
             try {
-                request.body
-                const zone = compute.zone('us-central1-a');
+                const zone = compute.zone(request.body.zone);
                 // TODO(developer): choose a name for the VM to delete
-                const name = 'ubuntu-instance';
+                const name = request.body.name;
                 const vm = zone.vm(name);
                 const [operation] = await vm.delete();
                 await operation.promise();
@@ -189,7 +253,8 @@ async function collectData() {
             for (const vm of vms[0]) {
                 console.log(vm.id);
                 console.log(vm.metadata.networkInterfaces[0].networkIP);
-                http.get('http://'+vm.metadata.networkInterfaces[0].networkIP+ ':12000/data', (resp) => {
+                http.get('http://'+vm.metadata.networkInterfaces[0].networkIP+ ':12012/data', (resp) => {
+                //http.get('http://localhost:12012/data', (resp) => {
                     let resData = '';
 
                     // A chunk of data has been recieved.
