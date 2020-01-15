@@ -19,7 +19,6 @@
     "yargs": "^15.0.2"
   },
   "devDependencies": {
-    "openstack-swift-client": "^2.1.0",
     "uuid": "^3.3.3"
   }
 }

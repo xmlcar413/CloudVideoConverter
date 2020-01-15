@@ -15,7 +15,7 @@ async function getDownloadList() {
         }
         else{
             text += '<p>'+element.fileInfo.filename+'</p>';
-            text += '<button onClick="downloadFile(\''+element.fileInfo.id.fid+'\',\''+element.fileInfo.filename+'\')">download</button>';
+            text += '<button onClick="downloadFile(\''+element.fileInfo.id.fid+'\',\''+element.fileInfo.filename+'\',\''+element.id+'\')">download</button>';
             text += '<p>Status: '+element.state+'</p>';
         }
         text += '</li>';
@@ -24,15 +24,15 @@ async function getDownloadList() {
     document.getElementById("downloadLinkContainer").innerHTML = text;
 }
 
-async function downloadFile(fileID, filename) {
-    console.log(fileID)
-    console.log(filename)
+async function downloadFile(fileID, filename, id) {
+    console.log(fileID);
+    console.log(filename);
     const response = await fetch(location.protocol + '//' + location.host + '/downloadFile',{
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({fileID:fileID, filename:filename})
+        body: JSON.stringify({fileID:fileID, filename:filename, id:id})
     }).then(function(resp) {
         return resp.blob();
     }).then(function(blob) {

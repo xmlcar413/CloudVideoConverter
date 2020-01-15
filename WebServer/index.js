@@ -20,17 +20,16 @@ var redisPort = argv.redisPort || 6379;
 var seaweedIP = argv.seaweedIP || "localhost";
 var seaweedPort = argv.seaweedPort || 9333;
 
-var thonkIP = argv.thonkIP || "localhost";
+var thonkIP1 = argv.thonkIP1 || "localhost";
+var thonkIP2 = argv.thonkIP2 || "localhost";
+var thonkIP3 = argv.thonkIP3 || "localhost";
 var thonkPort = argv.thonkPort || 28015;
 
+var thonkCluster = [{host: thonkIP1, port: thonkPort} ,{host: thonkIP2, port: thonkPort},{host: thonkIP3, port: thonkPort}];
+var thonkTableOptions =  {shards: 1, replicas: 3};
 
 var Queue = require('bull');
 
-
-
-//const SwiftClient = require('openstack-swift-client');
-
-//var workQueue = new Queue('work', {redis: {port: 12000, host: '172.17.0.2'}, prefix:'{myprefix}'});
 var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}, prefix:'{myprefix}'});
 
 
@@ -44,10 +43,10 @@ const seaweedfs = new weedClient({
 
 var thonk = require('rethinkdb');
 var connection = null;
-thonk.connect( {host: thonkIP, port: thonkPort}, function(err, conn) {
+thonk.connect( thonkCluster, function(err, conn) {
     if (err) throw err;
     connection = conn;
-    thonk.db('test').tableCreate('userFiles').run(connection, function(err, result) {
+    thonk.db('test').tableCreate('userFiles', thonkTableOptions).run(connection, function(err, result) {
         if (err) {
             if(err.msg === "Table `test.userFiles` already exists."){
 
@@ -83,12 +82,12 @@ app.get('/', function(request, response) {
 
 app.post('/file-upload', upload.single('file'), (req, res) => {
     console.log(`File-uploaded`);
-    console.log(req.body.convertTo);
+    var jobId = uuidv4();
     if(req.file){
         seaweedfs.write(req.file.path).then((fileInfo) => {
             console.log(fileInfo.fid);
             console.log(`File uploaded`);
-            var jobId = uuidv4();
+            console.log(req.file.path);
 
             thonk.table('userFiles').insert({
                 jobID: jobId,
@@ -125,8 +124,9 @@ app.post('/file-upload', upload.single('file'), (req, res) => {
             // error handling
         });
 
-
+	res.end(jobId);
         res.redirect('downloads');
+
     }else{
         res.json({
             uploaded : false
@@ -173,8 +173,14 @@ app.post('/downloadFile', function(req, res) {
 
         });
     }).catch(function(err) {
-        console.log(err)
-        //error handling
+        console.log(err);
+        thonk.table("userFiles").get(req.body.id).delete().run(connection, function(err, result) {
+            if (err){
+                console.log(err);
+                throw err;
+            }
+            console.log(JSON.stringify(result, null, 2));
+        });
     });
 });
 

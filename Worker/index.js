@@ -12,8 +12,11 @@ var redisPort = argv.redisPort || 6379;
 var seaweedIP = argv.seaweedIP || "localhost";
 var seaweedPort = argv.seaweedPort || 9333;
 
-var thonkIP = argv.thonkIP || "localhost";
+var thonkIP1 = argv.thonkIP1 || "localhost";
+var thonkIP2 = argv.thonkIP2 || "localhost";
+var thonkIP3 = argv.thonkIP3 || "localhost";
 var thonkPort = argv.thonkPort || 28015;
+var thonkCluster = [{host: thonkIP1, port: thonkPort} ,{host: thonkIP2, port: thonkPort},{host: thonkIP3, port: thonkPort}];
 
 var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}, prefix:'{myprefix}'});
 
@@ -25,7 +28,7 @@ const seaweedfs = new weedClient({
 
 
 var connection = null;
-thonk.connect( {host: thonkIP, port: thonkPort}, function(err, conn) {
+thonk.connect( thonkCluster, function(err, conn) {
     if (err){
         console.log(err);
         throw err;
@@ -66,7 +69,7 @@ workQueue.process(function(job, done){
                     );
                 })
                 .on('complete', () => {
-                    seaweedfs.write(encodedFileLocation).then((fileInfo) => {
+                    seaweedfs.write(encodedFileLocation,{ttl: '10m'}).then((fileInfo) => {
                         thonk.table('userFiles').filter(thonk.row("userID").eq(job.data.user).and(thonk.row("jobID").eq(job.data.jobID))).
                         update({
                             state: "Done",
