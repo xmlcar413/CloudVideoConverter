@@ -52,21 +52,30 @@ var thonk = require('rethinkdbdash')({
 });
 
 thonk.dbCreate('test').run().then(function(result) {
+    createTable();
 }).catch((err)=> {
+    if (err.msg === 'Database `test` already exists.'){
+        createTable();
+    }else{
+
+    }
     console.log(err.msg)
 });
 
-thonk.db('test').tableCreate('userFiles', thonkTableOptions).run().then(function(result) {
-    console.log(JSON.stringify(result, null, 2));
-}).catch((err)=> {
-    if(err.msg === "Table `test.userFiles` already exists."){
+function createTable(){
+    thonk.db('test').tableCreate('userFiles', thonkTableOptions).run().then(function(result) {
+        console.log(JSON.stringify(result, null, 2));
+    }).catch((err)=> {
+        if(err.msg === "Table `test.userFiles` already exists."){
 
-    }
-    else{
-        console.log(err);
-        throw err;
-    }
-});
+        }
+        else{
+            console.log(err);
+            throw err;
+        }
+    });
+}
+
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
