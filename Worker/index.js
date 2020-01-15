@@ -3,7 +3,6 @@ var hbjs = require('handbrake-js');
 var path = require('path');
 var Queue = require('bull');
 var fs = require('fs');
-var thonk = require('rethinkdb');
 const weedClient = require("@wabg/node-seaweedfs");
 
 var redisIP = argv.redisIP || "localhost";
@@ -26,16 +25,9 @@ const seaweedfs = new weedClient({
 });
 
 
-
-var connection = null;
-thonk.connect( thonkCluster, function(err, conn) {
-    if (err){
-        console.log(err);
-        throw err;
-    }
-    connection = conn;
+var thonk = require('rethinkdbdash')({
+    servers: thonkCluster
 });
-
 
 
 workQueue.process(function(job, done){
@@ -78,11 +70,7 @@ workQueue.process(function(job, done){
                                 id: fileInfo,
                                 filename: newFilename
                                 }
-                        }).run(connection, function(err, result) {
-                            if (err){
-                                console.log(err);
-                                throw err;
-                            }
+                        }).run().then( function(result) {
                             console.log(JSON.stringify(result, null, 2));
                             done();
                             fs.unlink(fileLocation,function(err){
@@ -101,6 +89,9 @@ workQueue.process(function(job, done){
                                 console.log("could not remove: " + job.data.fsID + " error: " + err);
                             });
                             console.log('Work complete');
+                        }).catch((err) => {
+                            console.log(err)
+                            // error handling
                         });
                     }).catch((err) => {
                         console.log(err)
