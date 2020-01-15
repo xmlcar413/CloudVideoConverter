@@ -31,7 +31,7 @@ console.log(thonkIP2);
 console.log(thonkIP3);
 
 
-var thonkCluster = [{host: thonkIP1, port: thonkPort} ,{host: thonkIP2, port: thonkPort},{host: thonkIP3, port: thonkPort}];
+var thonkCluster = [{host: thonkIP1, port: thonkPort}, {host: thonkIP2, port: thonkPort}, {host: thonkIP3, port: thonkPort}];
 var thonkTableOptions =  {shards: 1, replicas: 3};
 
 var Queue = require('bull');
@@ -49,7 +49,7 @@ const seaweedfs = new weedClient({
 
 var thonk = require('rethinkdb');
 var connection = null;
-thonk.connect( thonkCluster, function(err, conn) {
+thonk.connect( {host: thonkIP1, port: thonkPort}, function(err, conn) {
     if (err) throw err;
     connection = conn;
     thonk.db('test').tableCreate('userFiles', thonkTableOptions).run(connection, function(err, result) {
