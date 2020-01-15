@@ -32,7 +32,7 @@ console.log(thonkIP3);
 
 
 var thonkCluster = [{host: thonkIP1, port: thonkPort}, {host: thonkIP2, port: thonkPort}, {host: thonkIP3, port: thonkPort}];
-var thonkTableOptions =  {shards: 1, replicas: 3};
+var thonkTableOptions =  {shards: 1, replicas: 1};
 
 var Queue = require('bull');
 
@@ -47,25 +47,26 @@ const seaweedfs = new weedClient({
     port:    seaweedPort,
 });
 
-var thonk = require('rethinkdb');
-var connection = null;
-thonk.connect( {host: thonkIP1, port: thonkPort}, function(err, conn) {
-    if (err) throw err;
-    connection = conn;
-    thonk.db('test').tableCreate('userFiles', thonkTableOptions).run(connection, function(err, result) {
-        if (err) {
-            if(err.msg === "Table `test.userFiles` already exists."){
+var thonk = require('rethinkdbdash')({
+    servers: thonkCluster
+});
 
-            }
-            else{
-                console.log(err);
-                throw err;
-            }
-        }
-        console.log(JSON.stringify(result, null, 2));
-    })
-})
+thonk.dbCreate('test').run().then(function(result) {
+}).catch((err)=> {
+    console.log(err.msg)
+});
 
+thonk.db('test').tableCreate('userFiles', thonkTableOptions).run().then(function(result) {
+    console.log(JSON.stringify(result, null, 2));
+}).catch((err)=> {
+    if(err.msg === "Table `test.userFiles` already exists."){
+
+    }
+    else{
+        console.log(err);
+        throw err;
+    }
+});
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -102,12 +103,10 @@ app.post('/file-upload', upload.single('file'), (req, res) => {
                 jobFinished: -1,
                 state: "created",
                 fileInfo: {}
-            }).run(connection, function(err, result) {
-                if (err){
-                    console.log(err);
-                    throw err;
-                }
+            }).run().then(function(result) {
                 console.log(JSON.stringify(result, null, 2));
+            }).catch((err)=> {
+                console.log(err)
             });
             workQueue.add({
                 fsID: fileInfo.fid,
@@ -145,19 +144,13 @@ app.get('/downloads', function(request, response) {
 });
 
 app.get('/downloadList', function(req, res) {
-    thonk.db('test').table('userFiles').filter(thonk.row("userID").eq(req.cookies._uid)).run(connection, function(err, cursor) {
-        if (err) {
-            console.log(err);
-            throw err;
-        }
-        cursor.toArray(function(err, result) {
-            if (err) throw err;
-            console.log(JSON.stringify(result, null, 2));
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(result, null, 2));
-        });
+    thonk.db('test').table('userFiles').filter(thonk.row("userID").eq(req.cookies._uid)).run().then(function(result) {
+        console.log(JSON.stringify(result, null, 2));
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(result, null, 2));
+    }).catch((err)=> {
+        console.log(err)
     });
-
 });
 
 app.post('/downloadFile', function(req, res) {
@@ -180,29 +173,22 @@ app.post('/downloadFile', function(req, res) {
         });
     }).catch(function(err) {
         console.log(err);
-        thonk.table("userFiles").get(req.body.id).delete().run(connection, function(err, result) {
-            if (err){
-                console.log(err);
-                throw err;
-            }
+        thonk.table("userFiles").get(req.body.id).delete().run().then(function(result) {
             console.log(JSON.stringify(result, null, 2));
+        }).catch((err)=> {
+            console.log(err)
         });
     });
 });
 
 app.get('/test', function(request, response) {
 
-    thonk.db('test').table('userFiles').run(connection, function(err, cursor) {
-        if (err) {
-            console.log(err);
-            throw err;
-        }
-        cursor.toArray(function(err, result) {
-            if (err) throw err;
-            console.log(JSON.stringify(result, null, 2));
-            response.setHeader('Content-Type', 'application/json');
-            response.end(JSON.stringify(result, null, 2));
-        });
+    thonk.db('test').table('userFiles').run().then(function(result) {
+        console.log(JSON.stringify(result, null, 2));
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify(result, null, 2));
+    }).catch((err)=> {
+        console.log(err)
     });
 });
 
