@@ -13,7 +13,7 @@ const compute = new Compute();
 
 let masterPassword = argv.masterPassword ||'admin';
 let masterUser = argv.masterUser ||'admin';
-let beRobust = argv.beRobust || true;
+let beRobust = argv.beRobust || "true";
 let vmsStats = {};
 
 var app = express();
@@ -203,21 +203,9 @@ app.post('/start-complete-set',function(request, response) {
                 vm = zone.vm('weed-volume-'+uuidv4());
                 await vm.create(instancesConfig.weedVolume(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
 
-
                 //REDIS
                 vm = zone.vm('redis-1');
                 await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
-
-                await new Promise(r => setTimeout(r, 50000));
-
-                //WEB SERVER
-                vm = zone.vm('web-server-'+uuidv4());
-                await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
-                //TODO ADD TO HAPROXY
-
-                //WORKER
-                vm = zone.vm('worker-'+uuidv4());
-                await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
 
                 response.end();
             } catch (error) {
@@ -350,7 +338,7 @@ app.get('/home', function(request, response) {
 
 let robustRunning = false
 async function robust(){
-    if(robustRunning || !beRobust){
+    if(robustRunning || beRobust === "false"){
         return
     }
     robustRunning = true;

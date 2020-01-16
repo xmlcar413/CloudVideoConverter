@@ -106,7 +106,7 @@ function weedVolumeConfig(ip,ip2,ip3) {
                         sudo tar -zxvf linux_amd64.tar.gz
                         sudo mkdir data
                         internalIP=$(hostname -I)
-                        sudo ./weed volume -mserver=` + ip + `:9333,` + ip2 + `:9333,` + ip3 + `:9333 -ip=$internalIP -port=9090 -dir="./data"
+                        sudo ./weed volume -max=200 -mserver=` + ip + `:9333,` + ip2 + `:9333,` + ip3 + `:9333 -ip=$internalIP -port=9090 -dir="./data"
                 `
                 },
             ],
