@@ -12,6 +12,17 @@ function reThonkDbconfig(ip, ip2, ip3, http) {
                 {
                     key: 'startup-script',
                     value: `#! /bin/bash
+                            sudo apt-get --assume-yes install subversion
+                            sudo apt-get --assume-yes install curl
+                            curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                            sudo apt-get --assume-yes install nodejs
+                            svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                            cd NSA
+                            npm install
+                            node index.js &
+                            cd ..
+                    
+                    
                             sudo apt-get --assume-yes install wget
                             
                             echo "deb https://download.rethinkdb.com/apt \`lsb_release -cs\` main" | sudo tee /etc/apt/sources.list.d/rethinkdb.list
@@ -43,6 +54,16 @@ function weedMasterConfig(ip, ip2, ip3, http) {
                 {
                     key: 'startup-script',
                     value: `#! /bin/bash
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
+                        
                         sudo apt-get --assume-yes install wget
                         wget https://github.com/chrislusf/seaweedfs/releases/download/1.48/linux_amd64.tar.gz
                         tar -zxvf linux_amd64.tar.gz
@@ -70,6 +91,16 @@ function weedVolumeConfig(ip,ip2,ip3) {
                 {
                     key: 'startup-script',
                     value: `#! /bin/bash
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
+                    
                         sudo apt-get --assume-yes install wget
                         sudo wget https://github.com/chrislusf/seaweedfs/releases/download/1.48/linux_amd64.tar.gz
                         sudo tar -zxvf linux_amd64.tar.gz
@@ -101,6 +132,12 @@ function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster) {
                         sudo apt-get --assume-yes install curl
                         curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
                         sudo apt-get --assume-yes install nodejs
+                        
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
                         
                         svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/WebServer
                         cd WebServer
@@ -135,9 +172,13 @@ function workerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster ) {
                         sudo apt-get --assume-yes install curl
                         curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
                         sudo apt-get --assume-yes install nodejs
-                        
                         sudo apt-get --assume-yes install handbrake-cli
                         
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
                         
                         svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/Worker
                         cd Worker
@@ -165,6 +206,16 @@ function redisConfig(ip) {
                 {
                     key: 'startup-script',
                     value: `#! /bin/bash
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
+                        
                         sudo apt update
                         sudo apt install --yes apt-transport-https ca-certificates curl gnupg2 software-properties-common
                         curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
@@ -210,7 +261,7 @@ function monitorConfig(user, password, cred) {
                         cd ..
                         cd Monitor
                         
-                        echo `+cred+` > cred.json
+                        echo '`+cred+`' > cred.json
                         export GOOGLE_APPLICATION_CREDENTIALS="./cred.json"
                         
                         sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 3000

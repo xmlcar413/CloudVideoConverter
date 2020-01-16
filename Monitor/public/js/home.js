@@ -13,8 +13,9 @@ async function getVMList() {
 }
 async function startMonitor() {
     console.log("BUTTON WORKS")
-    const response = await fetch(location.protocol + '//' + location.host +  '/start-monitor');
-    const myJson = await response.json();
+    const response = await fetch(location.protocol + '//' + location.host +'/start-monitor', {
+        method: 'POST'
+    });
 }
 
 var cpuChartOptions = {
@@ -191,36 +192,23 @@ async function updateCharts(){
                     backgroundColor: dynamicColors()
                 };
 
-                Object.keys(cpuUsage).forEach(function (cpuDate) {
-                    cpuSet.data.push({x:parseInt(cpuDate), y: cpuUsage[cpuDate]});
-                });
-                Object.keys(driveInfo).forEach(function (driveDate) {
-                    driveSet.data.push({x:parseInt(driveDate), y: driveInfo[driveDate].usedPercentage});
-                });
-                Object.keys(memInfo).forEach(function (memDate) {
-                    memSet.data.push({x:parseInt(memDate), y: memInfo[memDate].freeMemPercentage});
-                });
-                Object.keys(procOpen).forEach(function (procDate) {
-                    procSet.data.push({x:parseInt(procDate), y: procOpen[procDate]});
-                });
+                for (let i = 0; i < cpuUsage.length; i++) {
+                    cpuSet.data.push({x:parseInt(cpuUsage[i].date), y: cpuUsage[i].info});
+                }
+                for (let i = 0; i < driveInfo.length; i++) {
+                    driveSet.data.push({x:parseInt(driveInfo[i].date), y: driveInfo[i].info});
+                }
+                for (let i = 0; i < memInfo.length; i++) {
+                    memSet.data.push({x:parseInt(memInfo[i].date), y: memInfo[i].info});
+                }
+                for (let i = 0; i < procOpen.length; i++) {
+                    procSet.data.push({x:parseInt(procOpen[i].date), y: procOpen[i].info});
+                }
+                
                 cpuDataset.push(cpuSet);
                 driveDataset.push(driveSet);
                 memDataset.push(memSet);
                 procDataset.push(procSet);
-            });
-            cpuDataset.push({
-                label: 'cpu 2',
-                data: [{
-                    x: 1576103014178,
-                    y: 1
-                }, {
-                    x: 1576103024178,
-                    y: 10
-                }, {
-                    x: 1576103034180,
-                    y: 5
-                }]
-
             });
 
             console.log(cpuDataset);

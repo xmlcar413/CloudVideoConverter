@@ -18,17 +18,14 @@ var redisIP = argv.redisIP || "localhost";
 var redisPort = argv.redisPort || 6379;
 
 var seaweedIP = argv.seaweedIP || "localhost";
+var seaweedIP2 = argv.seaweedIP2 || "localhost";
+var seaweedIP3 = argv.seaweedIP3 || "localhost";
 var seaweedPort = argv.seaweedPort || 9333;
 
 var thonkIP1 = argv.thonkIP1 || "localhost";
 var thonkIP2 = argv.thonkIP2 || "localhost";
 var thonkIP3 = argv.thonkIP3 || "localhost";
 var thonkPort = argv.thonkPort || 28015;
-
-console.log("THESESE ARE THE IP THAT SHOULD WORKS");
-console.log(thonkIP1);
-console.log(thonkIP2);
-console.log(thonkIP3);
 
 
 var thonkCluster = [{host: thonkIP1, port: thonkPort}, {host: thonkIP2, port: thonkPort}, {host: thonkIP3, port: thonkPort}];
@@ -42,10 +39,20 @@ var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}, pref
 app.use(bodyParser.urlencoded({extended : true}));
 app.use(bodyParser.json());
 
-const seaweedfs = new weedClient({
+let seaweedfs = new weedClient({
     server:    seaweedIP,
     port:    seaweedPort,
 });
+let seaweedfs2 = new weedClient({
+    server:    seaweedIP2,
+    port:    seaweedPort,
+});
+let seaweedfs3 = new weedClient({
+    server:    seaweedIP3,
+    port:    seaweedPort,
+});
+let switchedMaster = false;
+
 
 var thonk = require('rethinkdbdash')({
     servers: thonkCluster
@@ -99,7 +106,9 @@ app.get('/', function(request, response) {
 app.post('/file-upload', upload.single('file'), (req, res) => {
     console.log(`File-uploaded`);
     var jobId = uuidv4();
-    if(req.file){
+
+    async function extracted() {
+        console.log("inne");
         seaweedfs.write(req.file.path).then((fileInfo) => {
             console.log(fileInfo.fid);
             console.log(`File uploaded`);
@@ -128,24 +137,48 @@ app.post('/file-upload', upload.single('file'), (req, res) => {
             }).then(() => {
                 console.log("Added job")
             });
-            fs.unlink(req.file.path,function(err){
-                if (err){
+            fs.unlink(req.file.path, function (err) {
+                if (err) {
                     console.log(err);
                 }
             });
+        }).then(()=>{
+            return new Promise(function (resolve, reject) {
+                setTimeout(function () {
+                    resolve({data: '123'});
+                }, 250);
+            });
         }).catch((err) => {
-            console.log(err)
+            console.log(err);
+            console.log("asd");
+
+            if (switchedMaster === false) {
+                let tempSeaweed = seaweedfs;
+                seaweedfs = seaweedfs2;
+                seaweedfs2 = tempSeaweed;
+            } else if (switchedMaster === true) {
+                let tempSeaweed = seaweedfs;
+                seaweedfs = seaweedfs3;
+                seaweedfs3 = tempSeaweed;
+            }
+            switchedMaster = !switchedMaster;
+            extracted();
             // error handling
         });
-
-	res.end(jobId);
-        res.redirect('downloads');
-
-    }else{
-        res.json({
-            uploaded : false
-        })
     }
+
+    extracted().then(()=>{
+        if(req.file){
+            res.redirect('downloads');
+            res.end(jobId);
+
+        }else{
+            res.json({
+                uploaded : false
+            })
+        }
+    });
+
 });
 
 app.get('/downloads', function(request, response) {

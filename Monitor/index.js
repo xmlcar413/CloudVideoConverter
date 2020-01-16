@@ -83,8 +83,8 @@ app.post('/start-monitor',function(request, response) {
         (async () => {
             try {
                 var zone = compute.zone('europe-west4-b');
-                const vm = zone.vm('monitor-1');
-                var cred = JSON.parse(fs.readFileSync('./cred.json', 'utf8'));
+                const vm = zone.vm('monitor-2');
+                var cred = fs.readFileSync('./cred.json', 'utf8');
                 const data = await vm.create(instancesConfig.monitor("bobthebuilder","asdqwe123",cred));
                 const operation = data[1];
                 await operation.promise();
@@ -173,7 +173,7 @@ app.post('/start-complete-set',function(request, response) {
                 vm = zone.vm('redis-1');
                 await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
 
-                await new Promise(r => setTimeout(r, 20000));
+                await new Promise(r => setTimeout(r, 50000));
 
                 //WEB SERVER
                 vm = zone.vm('web-server-'+uuidv4());
