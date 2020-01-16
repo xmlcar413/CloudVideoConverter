@@ -29,7 +29,7 @@ var thonkPort = argv.thonkPort || 28015;
 
 
 var thonkCluster = [{host: thonkIP1, port: thonkPort}, {host: thonkIP2, port: thonkPort}, {host: thonkIP3, port: thonkPort}];
-var thonkTableOptions =  {shards: 1, replicas: 1};
+var thonkTableOptions =  {shards: 1, replicas: 3};
 
 var Queue = require('bull');
 

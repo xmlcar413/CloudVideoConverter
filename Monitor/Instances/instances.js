@@ -145,7 +145,6 @@ function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMasterIP1, w
                         sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 8008
                         
                         npm install
-                        echo "node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMaster + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `"
                         node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMasterIP1 + ` --seaweedIP2=` + weedMasterIP2 + ` --seaweedIP3=` + weedMasterIP3 + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `
                 `
                 },

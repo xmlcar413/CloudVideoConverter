@@ -17,6 +17,19 @@ async function startMonitor() {
         method: 'POST'
     });
 }
+async function startWorker() {
+    console.log("BUTTON WORKS")
+    const response = await fetch(location.protocol + '//' + location.host +'/start-worker', {
+        method: 'POST'
+    });
+}
+async function startWebServer() {
+    console.log("BUTTON WORKS")
+    const response = await fetch(location.protocol + '//' + location.host +'/start-web-server', {
+        method: 'POST'
+    });
+}
+
 
 var cpuChartOptions = {
     title: {

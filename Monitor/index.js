@@ -13,6 +13,7 @@ const compute = new Compute();
 
 let masterPassword = argv.masterPassword ||'admin';
 let masterUser = argv.masterUser ||'admin';
+let beRobust = argv.beRobust || true;
 let vmsStats = {};
 
 var app = express();
@@ -105,7 +106,41 @@ app.post('/start-monitor',function(request, response) {
     }
 });
 
+app.post('/start-worker',function(request, response) {
+    if (request.session.loggedin) {
+        (async () => {
+            try {
+                var zone = compute.zone('europe-west4-b');
+                vm = zone.vm('worker-'+uuidv4());
+                await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                response.end();
+            } catch (error) {
+                console.error(error);
+            }
+        })();
+    } else {
+        response.send('Please login to view this page!');
+        response.end();
+    }
+});
 
+app.post('/start-web-server',function(request, response) {
+    if (request.session.loggedin) {
+        (async () => {
+            try {
+                var zone = compute.zone('europe-west4-b');
+                vm = zone.vm('web-server-'+uuidv4());
+                await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                response.end();
+            } catch (error) {
+                console.error(error);
+            }
+        })();
+    } else {
+        response.send('Please login to view this page!');
+        response.end();
+    }
+});
 
 app.post('/start-2',function(request, response) {
     if (request.session.loggedin) {
@@ -251,8 +286,8 @@ async function collectData() {
         try {
             const vms = await compute.getVMs();
             for (const vm of vms[0]) {
-                console.log(vm.id);
-                console.log(vm.metadata.networkInterfaces[0].networkIP);
+                //console.log(vm.id);
+                //console.log(vm.metadata.networkInterfaces[0].networkIP);
                 http.get('http://'+vm.metadata.networkInterfaces[0].networkIP+ ':12012/data', (resp) => {
                 //http.get('http://localhost:12012/data', (resp) => {
                     let resData = '';
@@ -272,6 +307,11 @@ async function collectData() {
                     console.log("Error: " + err.message);
                 });
             }
+            Object.keys(vmsStats).forEach(function (key) {
+               if(Date.now() - vmsStats[key].date > (3600 *1000)){
+                   delete vmsStats[key]
+               }
+            });
         } catch (error) {
             console.error(error);
         }
@@ -307,5 +347,118 @@ app.get('/home', function(request, response) {
         response.end();
     }
 });
+
+let robustRunning = false
+async function robust(){
+    if(robustRunning || !beRobust){
+        return
+    }
+    robustRunning = true;
+    (async () => {
+        try {
+            const vms = await compute.getVMs();
+            var weedmaster1 = false;
+            var weedmaster2 = false;
+            var weedmaster3 = false;
+            var thonk1 = false;
+            var thonk2 = false;
+            var thonk3 = false;
+            var weedVolumeCount = 0;
+            var workerCount = 0;
+            var webServerCount = 0;
+
+            Object.keys(vms[0]).forEach(function (key) {
+                if(vms[0][key].id.includes("weed-master-1")){
+                    weedmaster1 = true;
+                }
+                else if(vms[0][key].id.includes("weed-master-2")){
+                    weedmaster2 = true;
+                }
+                else if(vms[0][key].id.includes("weed-master-3")){
+                    weedmaster3 = true;
+                }
+                else if(vms[0][key].id.includes("thonk-1")){
+                    thonk1 = true;
+                }
+                else if(vms[0][key].id.includes("thonk-2")){
+                    thonk2 = true;
+                }
+                else if(vms[0][key].id.includes("thonk-3")){
+                    thonk3 = true;
+                }
+                else if(vms[0][key].id.includes("worker")){
+                    workerCount += 1;
+                }
+                else if(vms[0][key].id.includes("weed-volume")){
+                    weedVolumeCount += 1;
+                }
+                else if(vms[0][key].id.includes("web-server")){
+                    webServerCount += 1;
+                }
+            });
+
+            var zone = compute.zone('europe-west4-a');
+
+            if(!weedmaster1){
+                console.log("Missing weed-master-1");
+                vm = zone.vm('weed-master-1');
+                await vm.create(instancesConfig.weedMaster(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3, true));
+            }
+            if(!weedmaster2){
+                console.log("Missing weed-master-2");
+                vm = zone.vm('weed-master-2');
+                await vm.create(instancesConfig.weedMaster(instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_3));
+            }
+            if(!weedmaster3){
+                console.log("Missing weed-master-3");
+                vm = zone.vm('weed-master-3');
+                await vm.create(instancesConfig.weedMaster(instancesConfig.WEED_MASTER_IP_3, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_1,));
+            }
+            if(!thonk1){
+                console.log("Missing thonk-1");
+                vm = zone.vm('thonk-1');
+                await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, true));
+            }
+            if(!thonk2){
+                console.log("Missing thonk-2");
+                vm = zone.vm('thonk-2');
+                await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_3));
+            }
+            if(!thonk3){
+                console.log("Missing thonk-3");
+                vm = zone.vm('thonk-3');
+                await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_3, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_1));
+            }
+            if(workerCount < 3){
+                console.log("Few workers");
+                for (let i = workerCount; i < 3; i++) {
+                    vm = zone.vm('worker-'+uuidv4());
+                    await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                }
+            }
+            if(webServerCount < 3){
+                console.log("Few web servers");
+                for (let i = webServerCount; i < 3; i++) {
+                    vm = zone.vm('web-server-'+uuidv4());
+                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                }
+            }
+            if(weedVolumeCount < 3){
+                console.log("Few weed volumes");
+                for (let i = weedVolumeCount; i < 3; i++) {
+                    vm = zone.vm('weed-volume-'+uuidv4());
+                    await vm.create(instancesConfig.weedVolume(instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                }
+            }
+
+            robustRunning = false;
+        } catch (error) {
+            console.error(error);
+        }
+    })();
+}
+setInterval(robust, 60*1000);
+
+
 
 app.listen(3000);
