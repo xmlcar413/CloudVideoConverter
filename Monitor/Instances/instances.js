@@ -1,7 +1,7 @@
 function reThonkDbconfig(ip, ip2, ip3, http) {
     return {
         os: 'debian',
-        machineType: 'f1-micro',
+        machineType: 'g1-small',
         http: http,
         networkInterfaces: [{
             network: 'projects/timstestigatest/global/networks/video-converter-network',
@@ -81,7 +81,7 @@ function weedMasterConfig(ip, ip2, ip3, http) {
 function weedVolumeConfig(ip,ip2,ip3) {
     return {
         os: 'debian',
-        machineType: 'f1-micro',
+        machineType: 'g1-small',
         http: false,
         networkInterfaces: [{
             network: 'projects/timstestigatest/global/networks/video-converter-network',
