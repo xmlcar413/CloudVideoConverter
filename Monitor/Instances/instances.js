@@ -115,7 +115,7 @@ function weedVolumeConfig(ip,ip2,ip3) {
 }
 
 
-function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster) {
+function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMasterIP1, weedMasterIP2, weedMasterIP3) {
     return {
         os: 'debian',
         machineType: 'f1-micro',
@@ -146,7 +146,7 @@ function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster) {
                         
                         npm install
                         echo "node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMaster + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `"
-                        node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMaster + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `
+                        node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMasterIP1 + ` --seaweedIP2=` + weedMasterIP2 + ` --seaweedIP3=` + weedMasterIP3 + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `
                 `
                 },
             ],
@@ -154,7 +154,7 @@ function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster) {
     };
 }
 
-function workerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster ) {
+function workerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMasterIP1, weedMasterIP2, weedMasterIP3 ) {
     return  {
         os: 'debian',
         machineType: 'g1-small',
@@ -184,7 +184,7 @@ function workerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster ) {
                         cd Worker
                         
                         npm install
-                        node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMaster + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `
+                        node index.js --redisIP=` + redisIP + ` --seaweedIP=` + weedMasterIP1 + ` --seaweedIP2=` + weedMasterIP2 + ` --seaweedIP3=` + weedMasterIP3 + ` --thonkIP1=` + thonkIP1 + ` --thonkIP2=` + thonkIP2 + ` --thonkIP3=` + thonkIP3 + `
                 `
                 },
             ],
@@ -195,7 +195,7 @@ function workerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMaster ) {
 function redisConfig(ip) {
     return  {
         os: 'debian',
-        machineType: 'f1-micro',
+        machineType: 'g1-small',
         http: false,
         networkInterfaces: [{
             network: 'projects/timstestigatest/global/networks/video-converter-network',

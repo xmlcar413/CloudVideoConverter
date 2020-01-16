@@ -71,7 +71,7 @@ var driveChartOptions = {
 var memChartOptions = {
     title: {
         display: true,
-        text: 'Used mem(%)'
+        text: 'Free mem(%)'
     },
     scales: {
         xAxes: [{
@@ -196,15 +196,15 @@ async function updateCharts(){
                     cpuSet.data.push({x:parseInt(cpuUsage[i].date), y: cpuUsage[i].info});
                 }
                 for (let i = 0; i < driveInfo.length; i++) {
-                    driveSet.data.push({x:parseInt(driveInfo[i].date), y: driveInfo[i].info});
+                    driveSet.data.push({x:parseInt(driveInfo[i].date), y: driveInfo[i].info.usedPercentage});
                 }
                 for (let i = 0; i < memInfo.length; i++) {
-                    memSet.data.push({x:parseInt(memInfo[i].date), y: memInfo[i].info});
+                    memSet.data.push({x:parseInt(memInfo[i].date), y: memInfo[i].info.freeMemPercentage});
                 }
                 for (let i = 0; i < procOpen.length; i++) {
                     procSet.data.push({x:parseInt(procOpen[i].date), y: procOpen[i].info});
                 }
-                
+
                 cpuDataset.push(cpuSet);
                 driveDataset.push(driveSet);
                 memDataset.push(memSet);
