@@ -219,7 +219,7 @@ app.post('/start-complete-set',function(request, response) {
                 vm = zone.vm('redis-1');
                 await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
 
-                vm = zone.vm('haproxy.cfg-1');
+                vm = zone.vm('haproxy-1');
                 await vm.create(instancesConfig.haproxy());
                 const metadata = await vm.getMetadata();
                 const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;

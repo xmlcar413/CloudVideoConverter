@@ -129,14 +129,17 @@ function haproxyConfig() {
                     value: `#! /bin/bash
                         sudo apt-get --assume-yes install subversion
                         sudo apt-get --assume-yes install curl
-                                                
+                        sudo apt-get --assume-yes install wget
+                        
+                        sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 10104
+                                             
                         sudo apt-get install haproxy 
                         sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy 
                         svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/haproxy
                         cd haproxy
                         sudo mv -f haproxy.cfg /etc/haproxy/haproxy.cfg
                         externalIP=$(curl https://ipinfo.io/ip)
-                        sudo sed -i "s/bytebyte/$externalIP/" /etc/haproxy/haproxy.cfg 
+                        sudo sed -i "s/bytebyte/bind $externalIP:10104/" /etc/haproxy/haproxy.cfg 
                         sudo service haproxy restart
                         
                         sudo wget https://github.com/haproxytech/dataplaneapi/releases/download/v1.2.4/dataplaneapi
