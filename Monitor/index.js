@@ -269,6 +269,7 @@ app.get('/vm-data', function(request, response) {
     }
 });
 
+var numberOfVmSet = [];
 async function collectData() {
     (async () => {
         try {
@@ -295,6 +296,13 @@ async function collectData() {
                     console.log("Error: " + err.message);
                 });
             }
+
+            numberOfVmSet[numberOfVmSet.length] = {info: Object.keys(vms[0]).length,date:Date.now()};
+            if(numberOfVmSet.length > 120){
+                numberOfVmSet = numberOfVmSet.slice(1);
+            }
+            vmsStats["numberOfVM"] = {data: JSON.parse(numberOfVmSet), date: Date.now()};
+
             Object.keys(vmsStats).forEach(function (key) {
                if(Date.now() - vmsStats[key].date > (3600 *1000)){
                    delete vmsStats[key]

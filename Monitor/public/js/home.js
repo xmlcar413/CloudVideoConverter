@@ -130,11 +130,36 @@ var procChartOptions = {
         }]
     }
 };
+var vmChartOptions = {
+    title: {
+        display: true,
+        text: 'Number of VMs'
+    },
+    scales: {
+        xAxes: [{
+            type:       "time",
+            time:       {
+                parser: "epoch",
+                tooltipFormat: 'll'
+            },
+            scaleLabel: {
+                display:     true,
+                labelString: 'Date'
+            }
+        }],
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+            }
+        }]
+    }
+};
 
 var ctxCPU = document.getElementById('cpuChart').getContext('2d');
 var ctxDrive = document.getElementById('driveChart').getContext('2d');
 var ctxMem = document.getElementById('memChart').getContext('2d');
 var ctxProc = document.getElementById('procChart').getContext('2d');
+var ctxVM = document.getElementById('vmChart').getContext('2d');
 
 let cpuChart = new Chart(ctxCPU, {
     type: 'line',
@@ -164,6 +189,13 @@ let procChart = new Chart(ctxProc, {
     },
     options: procChartOptions
 });
+let vmChart = new Chart(ctxVM, {
+    type: 'line',
+    data: {
+        datasets: []
+    },
+    options: vmChartOptions
+});
 
 async function updateCharts(){
 
@@ -176,9 +208,22 @@ async function updateCharts(){
             var driveDataset = [];
             var memDataset = [];
             var procDataset = [];
+            var numberOfVMDataset = [];
 
 
             Object.keys(myJson).forEach(function (key) {
+                if(key === "numberOfVM"){
+                    var vmSet = {
+                        label: key,
+                        data: [],
+                        backgroundColor: dynamicColors()
+                    };
+                    for (let i = 0; i < myJson[key].data.length; i++) {
+                        vmSet.data.push({x:parseInt(myJson[key].data[i].date), y: myJson[key].data[i].info});
+                    }
+                    numberOfVMDataset.push(vmSet);
+                    return;
+                }
                 var cpuUsage = myJson[key].data.cpuUsage;
                 var driveInfo = myJson[key].data.driveInfo;
                 var memInfo = myJson[key].data.memInfo;
@@ -222,6 +267,7 @@ async function updateCharts(){
                 driveDataset.push(driveSet);
                 memDataset.push(memSet);
                 procDataset.push(procSet);
+
             });
 
             console.log(cpuDataset);
@@ -240,6 +286,9 @@ async function updateCharts(){
 
             procChart.data.datasets = procDataset;
             procChart.update();
+
+            vmChart.data.datasets = numberOfVMDataset;
+            vmChart.update();
 
         });
 

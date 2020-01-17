@@ -156,7 +156,7 @@ function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMasterIP1, w
 function workerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMasterIP1, weedMasterIP2, weedMasterIP3 ) {
     return  {
         os: 'debian',
-        machineType: 'g1-small',
+        machineType: 'n1-standard-1',
         http: false,
         networkInterfaces: [{
             network: 'projects/timstestigatest/global/networks/video-converter-network',
