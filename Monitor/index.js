@@ -16,6 +16,18 @@ let masterUser = argv.masterUser ||'admin';
 let beRobust = argv.beRobust || "true";
 let vmsStats = {};
 
+var dataPlaneAPIHost = "http://192.168.1.27:5555";
+var dataPlaneAPIHeaders = {
+    'User-Agent':       'Super Agent/0.0.1',
+    'Content-Type':     'application/json',
+    'Cookie':           '_uid=01cd5187-3b56-46ad-892e-a8a788d9feb7'
+};
+var dataPlaneAPiAuth = {
+    'user': 'dataplaneapi',
+    'pass': 'mypassword',
+    'sendImmediately': false
+};
+
 var app = express();
 
 app.use(session({
@@ -207,6 +219,12 @@ app.post('/start-complete-set',function(request, response) {
                 vm = zone.vm('redis-1');
                 await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
 
+                vm = zone.vm('haproxy.cfg-1');
+                await vm.create(instancesConfig.haproxy());
+                const metadata = await vm.getMetadata();
+                const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                dataPlaneAPIHost="https://"+ip+":5555";
+
                 response.end();
             } catch (error) {
                 console.error(error);
@@ -217,6 +235,10 @@ app.post('/start-complete-set',function(request, response) {
         response.end();
     }
 });
+
+
+
+
 
 app.post('/delete-vm',function(request, response) {
     if (request.session.loggedin) {
@@ -456,5 +478,66 @@ async function robust(){
 setInterval(robust, 60*1000);
 
 
+
+function postServer(name,address,port){
+    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/frontends',
+        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+        if (err) {
+            return console.error('failed:', err);
+        }
+        var v = JSON.parse(httpResponse.body)._version;
+        console.log('successful! \n'+v);
+        request.post({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/transactions?version='+v,
+            auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+            if (err) {
+                return console.error('failed:', err);
+            }
+            var tID = JSON.parse(httpResponse.body).id;
+            console.log('successful! \n'+tID);
+            request.post({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/servers?backend=My_Web_Servers&transaction_id='+tID,
+                auth: dataPlaneAPiAuth, body:{"name": name, "address": address, "port": port}, headers: dataPlaneAPIHeaders, json: true}, function optionalCallback(err, httpResponse, body) {
+                if (err) {
+                    return console.error('failed:', err);
+                }
+                console.log('successful! \n'+httpResponse.body);
+                commitTransaction(tID);
+            });
+        });
+    });
+}
+function deleteServer(name){
+    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/frontends',
+        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+        if (err) {
+            return console.error('failed:', err);
+        }
+        var v = JSON.parse(httpResponse.body)._version;
+        console.log('successful! \n'+v);
+        request.post({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/transactions?version='+v,
+            auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+            if (err) {
+                return console.error('failed:', err);
+            }
+            var tID = JSON.parse(httpResponse.body).id;
+            console.log('successful! \n'+tID);
+            request.delete({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/servers/'+name+'?backend=My_Web_Servers&transaction_id='+tID,
+                auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders, json: true}, function optionalCallback(err, httpResponse, body) {
+                if (err) {
+                    return console.error('failed:', err);
+                }
+                commitTransaction(tID);
+            });
+        });
+    });
+}
+function commitTransaction(tID) {
+    request.put({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/transactions/'+tID,
+        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+        if (err) {
+            return console.error('failed:', err);
+        }
+        console.log('successful! \n'+httpResponse.body);
+    });
+}
 
 app.listen(3000);

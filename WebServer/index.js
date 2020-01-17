@@ -169,8 +169,7 @@ app.post('/file-upload', upload.single('file'), (req, res) => {
 
     extracted().then(()=>{
         if(req.file){
-            res.redirect('downloads');
-            res.end(jobId);
+            res.redirect('downloads?jobId='+jobId);
 
         }else{
             res.json({

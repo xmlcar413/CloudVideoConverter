@@ -114,6 +114,50 @@ function weedVolumeConfig(ip,ip2,ip3) {
     };
 }
 
+function haproxyConfig() {
+    return {
+        os: 'debian',
+        machineType: 'f1-micro',
+        http: true,
+        networkInterfaces: [{
+            network: 'projects/timstestigatest/global/networks/video-converter-network',
+        }],
+        metadata: {
+            items: [
+                {
+                    key: 'startup-script',
+                    value: `#! /bin/bash
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                                                
+                        sudo apt-get install haproxy 
+                        sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy 
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/haproxy
+                        cd haproxy
+                        sudo mv -f haproxy.cfg /etc/haproxy/haproxy.cfg
+                        externalIP=$(curl https://ipinfo.io/ip)
+                        sudo sed -i "s/bytebyte/$externalIP/" /etc/haproxy/haproxy.cfg 
+                        sudo service haproxy restart
+                        
+                        sudo wget https://github.com/haproxytech/dataplaneapi/releases/download/v1.2.4/dataplaneapi
+                        chmod +x dataplaneapi
+                        sudo cp dataplaneapi /usr/local/bin/
+                        cd /usr/local/bin/
+                        dataplaneapi \
+                         --host $externalIP \
+                         --port 5555 \
+                         --haproxy-bin $(which haproxy) \
+                         --config-file /etc/haproxy/haproxy.cfg \
+                         --reload-cmd "sudo service haproxy restart" \
+                         --reload-delay 5 \
+                         --userlist dataplane-api
+                `
+                },
+            ],
+        },
+    };
+}
+
 
 function webServerConfig(thonkIP1, thonkIP2, thonkIP3, redisIP, weedMasterIP1, weedMasterIP2, weedMasterIP3) {
     return {
@@ -292,6 +336,7 @@ module.exports = {
     redis: redisConfig,
     worker: workerConfig,
     monitor: monitorConfig,
+    haproxy: haproxyConfig,
 
     WEED_MASTER_IP_1: WEED_MASTER_IP_1,
     WEED_MASTER_IP_2: WEED_MASTER_IP_2,
