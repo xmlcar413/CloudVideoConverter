@@ -311,7 +311,7 @@ function redis2Config(ip) {
                         sudo apt install --yes docker-ce
                         
                         sudo docker run -d -p 6379:6379 --name redis1 redis
-			sudo docker exec -it redis1 redis-cli SLAVEOF `+REDIS_IP_1+`		
+			sudo docker exec -it redis1 redis-cli SLAVEOF `+REDIS_IP_1+` 6379		
 			sudo docker exec -it redis1 redis-cli -h`+REDIS_IP_1+` -p 6379 PING		
 			
                 `
@@ -321,6 +321,50 @@ function redis2Config(ip) {
     };
 }
 
+function redisRestartConfig(ip) {
+    return  {
+        os: 'debian',
+        machineType: 'g1-small',
+        http: false,
+        networkInterfaces: [{
+            network: 'projects/timstestigatest/global/networks/video-converter-network',
+            networkIP: ip
+        }],
+        metadata: {
+            items: [
+                {
+                    key: 'startup-script',
+                    value: `#! /bin/bash
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
+                        
+                        sudo apt update
+                        sudo apt install --yes apt-transport-https ca-certificates curl gnupg2 software-properties-common
+                        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+                        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+                        sudo apt update
+                        sudo apt install --yes docker-ce
+			sudo docker run -d -p 6380:6380 --name redisRestart redis 
+			sudo docker exec -it redisRestart redis-cli -h`+REDIS_IP_2+` -p 6379 SLAVEOF NO ONE
+			sudo docker stop redisRestart
+			sudo docker rm redisRestart
+                        sudo docker run -d -p 6379:6379 --name redis1 redis
+			sudo docker exec -it redis-cli SLAVEOF `+REDIS_IP_1+` 6379
+			sudo docker exec -it redis-cli SLAVEOF NO ONE
+			sudo docker exec -it redis-cli -h`+REDIS_IP_2+` -p 6379 SLAVEOF `+REDIS_IP_1+` 6379
+                `
+                },
+            ],
+        },
+    };
+}
 function monitorConfig(user, password, cred) {
     return  {
         os: 'debian',
@@ -384,7 +428,8 @@ module.exports = {
     weedVolume: weedVolumeConfig,
     webServer: webServerConfig,
     redis: redisConfig,
-    redis2: redis2Config,	
+    redis2: redis2Config,
+    redisRestart: redisRestartConfig,	
     worker: workerConfig,
     monitor: monitorConfig,
     haproxy: haproxyConfig,

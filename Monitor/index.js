@@ -388,6 +388,8 @@ async function robust(){
             var thonk1 = false;
             var thonk2 = false;
             var thonk3 = false;
+	    var redis1 = false;
+	    var redis2 = false;	
             var weedVolumeCount = 0;
             var workerCount = 0;
             var webServerCount = 0;
@@ -410,6 +412,12 @@ async function robust(){
                 }
                 else if(vms[0][key].id.includes("thonk-3")){
                     thonk3 = true;
+                }
+		else if(vms[0][key].id.includes("redis-1")){
+                    redis1 = true;
+                }
+		else if(vms[0][key].id.includes("redis-2")){
+                    redis2 = true;
                 }
                 else if(vms[0][key].id.includes("worker")){
                     workerCount += 1;
@@ -454,6 +462,18 @@ async function robust(){
                 vm = zone.vm('thonk-3');
                 await vm.create(instancesConfig.rethink(instancesConfig.THONK_IP_3, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_1));
             }
+	    if(!redis1){
+		if(redis2){
+	    		vm = zone.vm('redis-1');
+                	await vm.create(instancesConfig.redisRestart(instancesConfig.REDIS_IP_1));
+	    	}else {
+			vm = zone.vm('redis-1');
+                	await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
+	    	}
+            }if(!redis2){
+	    	vm = zone.vm('redis-2');
+                await vm.create(instancesConfig.redis2(instancesConfig.REDIS_IP_2));
+	    }
             if(workerCount < 3){
                 console.log("Few workers");
                 for (let i = workerCount; i < 3; i++) {
@@ -497,8 +517,6 @@ async function robust(){
 }
 setInterval(robust, 60*1000);
 
-
-
 function postServer(name,address,port){
     request.get({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/frontends',
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
@@ -525,6 +543,7 @@ function postServer(name,address,port){
         });
     });
 }
+
 function deleteServer(name){
     request.get({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/frontends',
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
