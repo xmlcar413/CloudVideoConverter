@@ -131,6 +131,15 @@ function haproxyConfig() {
                         sudo apt-get --assume-yes install curl
                         sudo apt-get --assume-yes install wget
                         
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
+                        
+                        
                         sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 10104
                                              
                         sudo apt-get install haproxy 

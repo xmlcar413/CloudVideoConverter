@@ -457,17 +457,23 @@ async function robust(){
             if(webServerCount < 3){
                 console.log("Few web servers");
                 for (let i = webServerCount; i < 3; i++) {
-                    var name = 'web-server-'+uuidv4();
-                    vm = zone.vm(name);
-                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
-                    const data = await vm.create(instancesConfig.monitor);
-                    const operation = data[1];
-                    await operation.promise();
+                    (async () => {
+                        try{
+                            var name = 'web-server-'+uuidv4();
+                            vm = zone.vm(name);
+                            await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                            const data = await vm.create(instancesConfig.monitor);
+                            const operation = data[1];
+                            await operation.promise();
 
-                    // External IP of the VM.
-                    const metadata = await vm.getMetadata();
-                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                    postServer(name,ip,80)
+                            // External IP of the VM.
+                            const metadata = await vm.getMetadata();
+                            const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                            postServer(name,ip,80)
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    })();
                 }
             }
             if(weedVolumeCount < 3){
