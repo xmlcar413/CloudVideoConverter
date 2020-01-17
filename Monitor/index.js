@@ -296,12 +296,12 @@ async function collectData() {
                     console.log("Error: " + err.message);
                 });
             }
-
+            console.log("HELLO")
             numberOfVmSet[numberOfVmSet.length] = {info: Object.keys(vms[0]).length,date:Date.now()};
             if(numberOfVmSet.length > 120){
                 numberOfVmSet = numberOfVmSet.slice(1);
             }
-            vmsStats["numberOfVM"] = {data: JSON.parse(numberOfVmSet), date: Date.now()};
+            vmsStats["numberOfVM"] = {data: numberOfVmSet, date: Date.now()};
 
             Object.keys(vmsStats).forEach(function (key) {
                if(Date.now() - vmsStats[key].date > (3600 *1000)){
