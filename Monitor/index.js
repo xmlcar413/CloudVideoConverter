@@ -8,6 +8,7 @@ var path = require('path');
 var instancesConfig = require('./Instances/instances');
 const Compute = require('@google-cloud/compute');
 const gcpMetadata = require('gcp-metadata');
+var request = require('request');
 var fs = require('fs')
 const compute = new Compute();
 
@@ -222,7 +223,7 @@ app.post('/start-complete-set',function(request, response) {
                 vm = zone.vm('redis-1');
                 await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
 		
-		vm = zone.vm('redis-2');
+		        vm = zone.vm('redis-2');
                 await vm.create(instancesConfig.redis2(instancesConfig.REDIS_IP_2));
 
                 vm = zone.vm('haproxy-1');
@@ -469,7 +470,7 @@ async function robust(){
                             vm = zone.vm(name);
                             await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
                             await vm.create(instancesConfig.monitor);
-                            
+
                             // External IP of the VM.
                             const metadata = await vm.getMetadata();
                             const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
