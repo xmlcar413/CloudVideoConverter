@@ -356,9 +356,9 @@ function redisRestartConfig(ip) {
 			sudo docker stop redisRestart
 			sudo docker rm redisRestart
                         sudo docker run -d -p 6379:6379 --name redis1 redis
-			sudo docker exec -it redis-cli SLAVEOF `+REDIS_IP_1+` 6379
-			sudo docker exec -it redis-cli SLAVEOF NO ONE
-			sudo docker exec -it redis-cli -h`+REDIS_IP_2+` -p 6379 SLAVEOF `+REDIS_IP_1+` 6379
+			sudo docker exec -it redis1 redis-cli SLAVEOF `+REDIS_IP_1+` 6379
+			sudo docker exec -it redis1 redis-cli SLAVEOF NO ONE
+			sudo docker exec -it redis1 redis-cli -h`+REDIS_IP_2+` -p 6379 SLAVEOF `+REDIS_IP_1+` 6379
                 `
                 },
             ],
