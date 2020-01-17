@@ -117,7 +117,7 @@ function weedVolumeConfig(ip,ip2,ip3) {
 function haproxyConfig() {
     return {
         os: 'debian',
-        machineType: 'f1-micro',
+        machineType: 'g1-small',
         http: true,
         networkInterfaces: [{
             network: 'projects/timstestigatest/global/networks/video-converter-network',
@@ -139,30 +139,23 @@ function haproxyConfig() {
                         node index.js &
                         cd ..
                         
-                        
-                        sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 10104
+                        sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 3500
                                              
-                        sudo apt-get install haproxy 
-                        sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy 
-                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/haproxy
+                        sudo apt-get --assume-yes install haproxy 
+                        export PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin"
+                        sudo sed -i 's/# treat it as a shell script fragment./ENABLED=1/' /etc/default/haproxy 
+                        sudo svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/haproxy
                         cd haproxy
                         sudo mv -f haproxy.cfg /etc/haproxy/haproxy.cfg
                         externalIP=$(curl https://ipinfo.io/ip)
-                        sudo sed -i "s/bytebyte/bind $externalIP:10104/" /etc/haproxy/haproxy.cfg 
-                        sudo service haproxy restart
+                        sudo sed -i "s/bytebyte/bind 0.0.0.0:3500/" /etc/haproxy/haproxy.cfg 
+                        sudo systemctl restart haproxy
                         
                         sudo wget https://github.com/haproxytech/dataplaneapi/releases/download/v1.2.4/dataplaneapi
-                        chmod +x dataplaneapi
+                        sudo chmod +x dataplaneapi
                         sudo cp dataplaneapi /usr/local/bin/
                         cd /usr/local/bin/
-                        dataplaneapi \
-                         --host $externalIP \
-                         --port 5555 \
-                         --haproxy-bin $(which haproxy) \
-                         --config-file /etc/haproxy/haproxy.cfg \
-                         --reload-cmd "sudo service haproxy restart" \
-                         --reload-delay 5 \
-                         --userlist dataplane-api
+                        sudo dataplaneapi --host 0.0.0.0 --port 5555 --haproxy-bin $(which haproxy) --config-file /etc/haproxy/haproxy.cfg --reload-cmd "sudo service haproxy restart"  --reload-delay 5 --userlist dataplane-api
                 `
                 },
             ],
@@ -285,6 +278,47 @@ function redisConfig(ip) {
         },
     };
 }
+function redis2Config(ip) {
+    return  {
+        os: 'debian',
+        machineType: 'f1-micro',
+        http: false,
+        networkInterfaces: [{
+            network: 'projects/timstestigatest/global/networks/video-converter-network',
+            networkIP: ip
+        }],
+        metadata: {
+            items: [
+                {
+                    key: 'startup-script',
+                    value: `#! /bin/bash
+                        sudo apt-get --assume-yes install subversion
+                        sudo apt-get --assume-yes install curl
+                        curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+                        sudo apt-get --assume-yes install nodejs
+                        svn checkout https://github.com/xmlcar413/CloudVideoConverter/trunk/NSA
+                        cd NSA
+                        npm install
+                        node index.js &
+                        cd ..
+                        
+                        sudo apt update
+                        sudo apt install --yes apt-transport-https ca-certificates curl gnupg2 software-properties-common
+                        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+                        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+                        sudo apt update
+                        sudo apt install --yes docker-ce
+                        
+                        sudo docker run -d -p 6379:6379 --name redis1 redis
+			sudo docker exec -it redis1 redis-cli SLAVEOF `+REDIS_IP_1+`		
+			sudo docker exec -it redis1 redis-cli -h`+REDIS_IP_1+` -p 6379 PING		
+			
+                `
+                },
+            ],
+        },
+    };
+}
 
 function monitorConfig(user, password, cred) {
     return  {
@@ -335,7 +369,7 @@ const WEED_MASTER_IP_2 = "10.164.0.3";
 const WEED_MASTER_IP_3 = "10.164.0.4";
 
 const REDIS_IP_1 = "10.164.0.7";
-
+const REDIS_IP_2 = "10.164.0.31";
 const THONK_IP_1 = "10.164.0.8";
 const THONK_IP_2 = "10.164.0.51";
 const THONK_IP_3 = "10.164.0.52";
@@ -346,6 +380,7 @@ module.exports = {
     weedVolume: weedVolumeConfig,
     webServer: webServerConfig,
     redis: redisConfig,
+    redis2: redis2Config,	
     worker: workerConfig,
     monitor: monitorConfig,
     haproxy: haproxyConfig,
@@ -356,5 +391,6 @@ module.exports = {
     THONK_IP_1: THONK_IP_1,
     THONK_IP_2: THONK_IP_2,
     THONK_IP_3: THONK_IP_3,
-    REDIS_IP_1: REDIS_IP_1
+    REDIS_IP_1: REDIS_IP_1,
+    REDIS_IP_2: REDIS_IP_2
 };

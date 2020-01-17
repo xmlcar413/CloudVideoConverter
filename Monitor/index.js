@@ -123,9 +123,12 @@ app.post('/start-worker',function(request, response) {
         (async () => {
             try {
                 var zone = compute.zone('europe-west4-b');
-                vm = zone.vm('worker-'+uuidv4());
-                await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
-                response.end();
+                var vm = zone.vm('haproxy-1');
+                await vm.create(instancesConfig.haproxy());
+                const metadata = await vm.getMetadata();
+                const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                dataPlaneAPIHost="https://"+ip+":5555";
+
             } catch (error) {
                 console.error(error);
             }
@@ -218,6 +221,9 @@ app.post('/start-complete-set',function(request, response) {
                 //REDIS
                 vm = zone.vm('redis-1');
                 await vm.create(instancesConfig.redis(instancesConfig.REDIS_IP_1));
+		
+		vm = zone.vm('redis-2');
+                await vm.create(instancesConfig.redis2(instancesConfig.REDIS_IP_2));
 
                 vm = zone.vm('haproxy-1');
                 await vm.create(instancesConfig.haproxy());
@@ -462,10 +468,8 @@ async function robust(){
                             var name = 'web-server-'+uuidv4();
                             vm = zone.vm(name);
                             await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
-                            const data = await vm.create(instancesConfig.monitor);
-                            const operation = data[1];
-                            await operation.promise();
-
+                            await vm.create(instancesConfig.monitor);
+                            
                             // External IP of the VM.
                             const metadata = await vm.getMetadata();
                             const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
