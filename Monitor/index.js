@@ -17,7 +17,7 @@ let masterUser = argv.masterUser ||'admin';
 let beRobust = argv.beRobust || "true";
 let vmsStats = {};
 
-var dataPlaneAPIHost = "http://"+instancesConfig.HAPROXY_IP_1+"+:5555";
+var dataPlaneAPIHost = "http://"+instancesConfig.HAPROXY_IP_1+":5555";
 var dataPlaneAPIHeaders = {
     'User-Agent':       'Super Agent/0.0.1',
     'Content-Type':     'application/json',
@@ -124,8 +124,8 @@ app.post('/start-worker',function(request, response) {
         (async () => {
             try {
                 var zone = compute.zone('europe-west4-b');
-                var vm = zone.vm('haproxy-1');
-                await vm.create(instancesConfig.haproxy());
+                var vm = zone.vm('haproxy-2');
+                await vm.create(instancesConfig.haproxy(instancesConfig.HAPROXY_IP_1));
                 //const metadata = await vm.getMetadata();
                 //const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
                 dataPlaneAPIHost="https://"+instancesConfig.HAPROXY_IP_1+":5555";
