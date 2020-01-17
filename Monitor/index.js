@@ -17,7 +17,7 @@ let masterUser = argv.masterUser ||'admin';
 let beRobust = argv.beRobust || "true";
 let vmsStats = {};
 
-var dataPlaneAPIHost = "http://192.168.1.27:5555";
+var dataPlaneAPIHost = "http://"+instancesConfig.HAPROXY_IP_1+"+:5555";
 var dataPlaneAPIHeaders = {
     'User-Agent':       'Super Agent/0.0.1',
     'Content-Type':     'application/json',
@@ -126,9 +126,9 @@ app.post('/start-worker',function(request, response) {
                 var zone = compute.zone('europe-west4-b');
                 var vm = zone.vm('haproxy-1');
                 await vm.create(instancesConfig.haproxy());
-                const metadata = await vm.getMetadata();
-                const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                dataPlaneAPIHost="https://"+ip+":5555";
+                //const metadata = await vm.getMetadata();
+                //const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                dataPlaneAPIHost="https://"+instancesConfig.HAPROXY_IP_1+":5555";
 
             } catch (error) {
                 console.error(error);
@@ -227,10 +227,10 @@ app.post('/start-complete-set',function(request, response) {
                 await vm.create(instancesConfig.redis2(instancesConfig.REDIS_IP_2));
 
                 vm = zone.vm('haproxy-1');
-                await vm.create(instancesConfig.haproxy());
-                const metadata = await vm.getMetadata();
-                const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                dataPlaneAPIHost="https://"+ip+":5555";
+                await vm.create(instancesConfig.haproxy(instancesConfig.HAPROXY_IP_1));
+                //const metadata = await vm.getMetadata();
+                //const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                dataPlaneAPIHost="https://"+instancesConfig.HAPROXY_IP_1+":5555";
 
                 response.end();
             } catch (error) {

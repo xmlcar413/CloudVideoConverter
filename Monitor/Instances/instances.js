@@ -114,13 +114,14 @@ function weedVolumeConfig(ip,ip2,ip3) {
     };
 }
 
-function haproxyConfig() {
+function haproxyConfig(ip) {
     return {
         os: 'debian',
         machineType: 'g1-small',
         http: true,
         networkInterfaces: [{
             network: 'projects/timstestigatest/global/networks/video-converter-network',
+            networkIP: ip
         }],
         metadata: {
             items: [
@@ -370,6 +371,9 @@ const WEED_MASTER_IP_3 = "10.164.0.4";
 
 const REDIS_IP_1 = "10.164.0.7";
 const REDIS_IP_2 = "10.164.0.31";
+
+const HAPROXY_IP_1 = "10.164.15.245";
+
 const THONK_IP_1 = "10.164.0.8";
 const THONK_IP_2 = "10.164.0.51";
 const THONK_IP_3 = "10.164.0.52";
@@ -392,5 +396,6 @@ module.exports = {
     THONK_IP_2: THONK_IP_2,
     THONK_IP_3: THONK_IP_3,
     REDIS_IP_1: REDIS_IP_1,
-    REDIS_IP_2: REDIS_IP_2
+    REDIS_IP_2: REDIS_IP_2,
+    HAPROXY_IP_1: HAPROXY_IP_1
 };
