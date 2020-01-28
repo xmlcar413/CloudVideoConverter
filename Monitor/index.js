@@ -4,6 +4,7 @@ var express = require('express');
 var session = require('express-session');
 const http = require('http');
 var bodyParser = require('body-parser');
+const Queue = require('bull');
 var path = require('path');
 var instancesConfig = require('./Instances/instances');
 const Compute = require('@google-cloud/compute');
@@ -12,9 +13,12 @@ var request = require('request');
 var fs = require('fs')
 const compute = new Compute();
 
+var redisIP = argv.redisIP || "localhost";
+var redisPort = argv.redisPort || 6379;
 let masterPassword = argv.masterPassword ||'admin';
 let masterUser = argv.masterUser ||'admin';
 let beRobust = argv.beRobust || "true";
+let doScale = argv.doScale || "true";
 let vmsStats = {};
 
 var dataPlaneAPIHost = "http://"+instancesConfig.HAPROXY_IP_1+":5555";
@@ -28,6 +32,10 @@ var dataPlaneAPiAuth = {
     'pass': 'mypassword',
     'sendImmediately': false
 };
+
+if(doScale){
+    var workQueue = new Queue('work', {redis: {port: redisPort, host: redisIP}, prefix:'{myprefix}'});
+}
 
 var app = express();
 
@@ -299,6 +307,7 @@ app.get('/vm-data', function(request, response) {
 });
 
 var numberOfVmSet = [];
+var bullInfo = [];
 async function collectData() {
     (async () => {
         try {
@@ -331,6 +340,16 @@ async function collectData() {
                 numberOfVmSet = numberOfVmSet.slice(1);
             }
             vmsStats["numberOfVM"] = {data: numberOfVmSet, date: Date.now()};
+
+            if(doScale === "true"){
+                workQueue.getJobCounts().then((results) => {
+                    bullInfo[bullInfo.length] = {info: results, date:Date.now()}
+                    if(bullInfo.length > 120){
+                        bullInfo = bullInfo.slice(1);
+                    }
+                });
+                vmsStats["bullInfo"] = {data: bullInfo, date: Date.now()}
+            }
 
             Object.keys(vmsStats).forEach(function (key) {
                if(Date.now() - vmsStats[key].date > (3600 *1000)){
@@ -373,15 +392,20 @@ app.get('/home', function(request, response) {
     }
 });
 
+
+var maxNumberOfWorkers = 3;
 let robustRunning = false
 async function robust(){
-    if(robustRunning || beRobust === "false"){
+    if(robustRunning || beRobust !== "true"){
         return
     }
     robustRunning = true;
     (async () => {
         try {
             const vms = await compute.getVMs();
+            var webserver1 = false;
+            var webserver2 = false;
+            var webserver3 = false;
             var weedmaster1 = false;
             var weedmaster2 = false;
             var weedmaster3 = false;
@@ -395,6 +419,15 @@ async function robust(){
             var webServerCount = 0;
 
             Object.keys(vms[0]).forEach(function (key) {
+                if(vms[0][key].id.includes("webserver-1")){
+                    webserver1 = true;
+                }
+                else if(vms[0][key].id.includes("webserver-2")){
+                    webserver2 = true;
+                }
+                else if(vms[0][key].id.includes("webserver-3")){
+                    webserver3 = true;
+                }
                 if(vms[0][key].id.includes("weed-master-1")){
                     weedmaster1 = true;
                 }
@@ -425,13 +458,58 @@ async function robust(){
                 else if(vms[0][key].id.includes("weed-volume")){
                     weedVolumeCount += 1;
                 }
-                else if(vms[0][key].id.includes("web-server")){
-                    webServerCount += 1;
-                }
             });
 
             var zone = compute.zone('europe-west4-a');
 
+            if(!webserver1){
+                console.log("Missing webserver-1");
+                var name = 'web-server-1';
+                try{
+                    deleteServer(name);
+                    vm = zone.vm(name);
+                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+
+                    // External IP of the VM.
+                    const metadata = await vm.getMetadata();
+                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                    postServer(name,ip,80);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+            if(!webserver2){
+                console.log("Missing webserver-2");
+                var name = 'web-server-2';
+                try{
+                    deleteServer(name);
+                    vm = zone.vm(name);
+                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+
+                    // External IP of the VM.
+                    const metadata = await vm.getMetadata();
+                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                    postServer(name,ip,80);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+            if(!webserver3){
+                console.log("Missing webserver-3");
+                var name = 'web-server-3';
+                try{
+                    deleteServer(name);
+                    vm = zone.vm(name);
+                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+
+                    // External IP of the VM.
+                    const metadata = await vm.getMetadata();
+                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                    postServer(name,ip,80);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
             if(!weedmaster1){
                 console.log("Missing weed-master-1");
                 vm = zone.vm('weed-master-1');
@@ -476,31 +554,56 @@ async function robust(){
 	    	    vm = zone.vm('redis-2');
                 await vm.create(instancesConfig.redis2(instancesConfig.REDIS_IP_2));
 	        }
-            if(workerCount < 3){
-                console.log("Few workers");
-                for (let i = workerCount; i < 3; i++) {
-                    vm = zone.vm('worker-'+uuidv4());
-                    await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
-                }
-            }
-            if(webServerCount < 3){
-                console.log("Few web servers");
-                for (let i = webServerCount; i < 3; i++) {
-                    (async () => {
-                        try{
-                            var name = 'web-server-'+uuidv4();
-                            vm = zone.vm(name);
-                            await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
-                            await vm.create(instancesConfig.monitor);
+	        if(doScale === "True"){
+                workQueue.getJobCounts().then((results) => {
+                    if(parseInt(results.waiting) >= 5){
+                        maxNumberOfWorkers += 3;
+                    }
+                    else if(parseInt(results.active) < (maxNumberOfWorkers-3)){
+                        maxNumberOfWorkers -= 3;
+                    }
 
-                            // External IP of the VM.
-                            const metadata = await vm.getMetadata();
-                            const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                            postServer(name,ip,80)
-                        } catch (error) {
-                            console.error(error);
+                    if(workerCount < maxNumberOfWorkers){
+                        console.log("Few workers");
+                        for (let i = workerCount; i < maxNumberOfWorkers; i++) {
+                            (async () => {
+                                vm = zone.vm('worker-'+uuidv4());
+                                await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                            })();
                         }
-                    })();
+                    }
+                    else if (workerCount > maxNumberOfWorkers){
+                        var kill =   workerCount - maxNumberOfWorkers;
+                        Object.keys(vms[0]).forEach(function (key) {
+                            if(vms[0][key].id.includes("worker")){
+                                if(kill === 0){
+                                    return
+                                }
+                                kill -= 1;
+                                (async () => {
+                                    try {
+                                        const zone = compute.zone(vms[0][key].zone.id);
+                                        const vm = zone.vm(vms[0][key].id);
+                                        const [operation] = await vm.delete();
+                                        await operation.promise();
+                                        console.log(`VM deleted!`);
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
+                                })();
+                            }
+                        });
+
+                    }
+
+                })
+            }else{
+                if(workerCount < maxNumberOfWorkers){
+                    console.log("Few workers");
+                    for (let i = workerCount; i < 3; i++) {
+                        vm = zone.vm('worker-'+uuidv4());
+                        await vm.create(instancesConfig.worker(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                    }
                 }
             }
             if(weedVolumeCount < 3){
@@ -520,21 +623,21 @@ async function robust(){
 setInterval(robust, 60*1000);
 
 function postServer(name,address,port){
-    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/frontends',
+    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
         }
         var v = JSON.parse(httpResponse.body)._version;
         console.log('successful! \n'+v);
-        request.post({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/transactions?version='+v,
+        request.post({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions?version='+v,
             auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return console.error('failed:', err);
             }
             var tID = JSON.parse(httpResponse.body).id;
             console.log('successful! \n'+tID);
-            request.post({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/servers?backend=My_Web_Servers&transaction_id='+tID,
+            request.post({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/servers?backend=My_Web_Servers&transaction_id='+tID,
                 auth: dataPlaneAPiAuth, body:{"name": name, "address": address, "port": port}, headers: dataPlaneAPIHeaders, json: true}, function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     return console.error('failed:', err);
@@ -547,21 +650,21 @@ function postServer(name,address,port){
 }
 
 function deleteServer(name){
-    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/frontends',
+    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
         }
         var v = JSON.parse(httpResponse.body)._version;
         console.log('successful! \n'+v);
-        request.post({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/transactions?version='+v,
+        request.post({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions?version='+v,
             auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return console.error('failed:', err);
             }
             var tID = JSON.parse(httpResponse.body).id;
             console.log('successful! \n'+tID);
-            request.delete({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/configuration/servers/'+name+'?backend=My_Web_Servers&transaction_id='+tID,
+            request.delete({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/servers/'+name+'?backend=My_Web_Servers&transaction_id='+tID,
                 auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders, json: true}, function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     return console.error('failed:', err);
@@ -571,8 +674,9 @@ function deleteServer(name){
         });
     });
 }
+
 function commitTransaction(tID) {
-    request.put({url: dataPlaneAPIHost +'/v1/services/haproxy.cfg/transactions/'+tID,
+    request.put({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions/'+tID,
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);

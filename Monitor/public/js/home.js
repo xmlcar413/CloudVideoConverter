@@ -155,11 +155,38 @@ var vmChartOptions = {
     }
 };
 
+var bullChartOptions = {
+    title: {
+        display: true,
+        text: 'Work queue statistics'
+    },
+    scales: {
+        xAxes: [{
+            type:       "time",
+            time:       {
+                parser: "epoch",
+                tooltipFormat: 'll'
+            },
+            scaleLabel: {
+                display:     true,
+                labelString: 'Date'
+            }
+        }],
+        yAxes: [{
+            ticks: {
+                beginAtZero: true,
+            }
+        }]
+    }
+};
+
+
 var ctxCPU = document.getElementById('cpuChart').getContext('2d');
 var ctxDrive = document.getElementById('driveChart').getContext('2d');
 var ctxMem = document.getElementById('memChart').getContext('2d');
 var ctxProc = document.getElementById('procChart').getContext('2d');
 var ctxVM = document.getElementById('vmChart').getContext('2d');
+var ctxBull = document.getElementById('bullChart').getContext('2d');
 
 let cpuChart = new Chart(ctxCPU, {
     type: 'line',
@@ -196,6 +223,13 @@ let vmChart = new Chart(ctxVM, {
     },
     options: vmChartOptions
 });
+let bullChart = new Chart(ctxBull, {
+    type: 'line',
+    data: {
+        datasets: []
+    },
+    options: bullChartOptions
+});
 
 async function updateCharts(){
 
@@ -209,6 +243,7 @@ async function updateCharts(){
             var memDataset = [];
             var procDataset = [];
             var numberOfVMDataset = [];
+            var bullDataset = [];
 
 
             Object.keys(myJson).forEach(function (key) {
@@ -224,6 +259,37 @@ async function updateCharts(){
                     numberOfVMDataset.push(vmSet);
                     return;
                 }
+                else if(key === "bullInfo"){
+                    var activeSet = {
+                        label: "Active",
+                        data: [],
+                        backgroundColor: dynamicColors()
+                    };
+                    var waitingSet = {
+                        label: "Waiting",
+                        data: [],
+                        backgroundColor: dynamicColors()
+                    };
+                    var totalSet = {
+                        label: "Waiting",
+                        data: [],
+                        backgroundColor: dynamicColors()
+                    };
+                    for (let i = 0; i < myJson[key].data.length; i++) {
+                        activeSet.data.push({x:parseInt(myJson[key].data[i].date), y: parseInt(myJson[key].data[i].info.active)});
+                        waitingSet.data.push({x:parseInt(myJson[key].data[i].date), y: parseInt(myJson[key].data[i].info.waiting)});
+                        var total = parseInt(myJson[key].data[i].info.active) + parseInt(myJson[key].data[i].info.waiting)
+                        totalSet.data.push({x:parseInt(myJson[key].data[i].date), y: total});
+                    }
+                    bullDataset.push(activeSet);
+                    bullDataset.push(waitingSet);
+                    bullDataset.push(totalSet);
+                }
+
+
+
+
+
                 var cpuUsage = myJson[key].data.cpuUsage;
                 var driveInfo = myJson[key].data.driveInfo;
                 var memInfo = myJson[key].data.memInfo;
@@ -290,6 +356,8 @@ async function updateCharts(){
             vmChart.data.datasets = numberOfVMDataset;
             vmChart.update();
 
+            bullChart.data.datasets = numberOfVMDataset;
+            bullChart.update();
         });
 
 /*
