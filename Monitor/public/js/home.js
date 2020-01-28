@@ -284,6 +284,7 @@ async function updateCharts(){
                     bullDataset.push(activeSet);
                     bullDataset.push(waitingSet);
                     bullDataset.push(totalSet);
+                    return;
                 }
 
 

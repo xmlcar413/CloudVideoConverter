@@ -419,13 +419,13 @@ async function robust(){
             var webServerCount = 0;
 
             Object.keys(vms[0]).forEach(function (key) {
-                if(vms[0][key].id.includes("webserver-1")){
+                if(vms[0][key].id.includes("web-server-1")){
                     webserver1 = true;
                 }
-                else if(vms[0][key].id.includes("webserver-2")){
+                else if(vms[0][key].id.includes("web-server-2")){
                     webserver2 = true;
                 }
-                else if(vms[0][key].id.includes("webserver-3")){
+                else if(vms[0][key].id.includes("web-server-3")){
                     webserver3 = true;
                 }
                 if(vms[0][key].id.includes("weed-master-1")){
