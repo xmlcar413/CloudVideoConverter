@@ -660,9 +660,7 @@ async function postServer(name,address,port){
                 });
             });
         });
-    }).then(()=>{
-        return Promise.resolved('Done');
-    });
+    })
 }
 async function deleteServer(name){
     await request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
@@ -689,9 +687,7 @@ async function deleteServer(name){
                 });
             });
         });
-    }).then(()=>{
-        return Promise.resolved('Done');
-    });
+    })
 }
 async function commitTransaction(tID) {
     await request.put({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions/'+tID,
@@ -701,8 +697,6 @@ async function commitTransaction(tID) {
         }
         console.log('successful! \n'+httpResponse.body);
         
-    }).then(()=>{
-        return Promise.resolved('Done');
     })
 }
 

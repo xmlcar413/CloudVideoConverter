@@ -271,7 +271,7 @@ async function updateCharts(){
                         backgroundColor: dynamicColors()
                     };
                     var totalSet = {
-                        label: "Waiting",
+                        label: "Total",
                         data: [],
                         backgroundColor: dynamicColors()
                     };
