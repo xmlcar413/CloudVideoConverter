@@ -365,7 +365,7 @@ function redisRestartConfig(ip) {
         },
     };
 }
-function monitorConfig(user, password, cred) {
+function monitorConfig(user, password, cred, redisIP) {
     return  {
         os: 'debian',
         machineType: 'g1-small',
@@ -401,7 +401,7 @@ function monitorConfig(user, password, cred) {
                         sudo iptables -t nat -A PREROUTING -i ens4 -p tcp --dport 80 -j REDIRECT --to-port 3000
                         
                         npm install
-                        node index.js --masterUser=`+user+` --masterPassword=`+password+` &
+                        node index.js --masterUser=`+user+` --masterPassword=`+password+` --redisIP=` + redisIP + `&
                 `
                 },
             ],

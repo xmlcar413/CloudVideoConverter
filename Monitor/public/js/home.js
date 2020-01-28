@@ -357,7 +357,7 @@ async function updateCharts(){
             vmChart.data.datasets = numberOfVMDataset;
             vmChart.update();
 
-            bullChart.data.datasets = numberOfVMDataset;
+            bullChart.data.datasets = bullDataset;
             bullChart.update();
         });
 

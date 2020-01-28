@@ -107,7 +107,7 @@ app.post('/start-monitor',function(request, response) {
                 var zone = compute.zone('europe-west4-b');
                 const vm = zone.vm('monitor-2');
                 var cred = fs.readFileSync('./cred.json', 'utf8');
-                const data = await vm.create(instancesConfig.monitor("bobthebuilder","asdqwe123",cred));
+                const data = await vm.create(instancesConfig.monitor("bobthebuilder","asdqwe123",cred,instancesConfig.REDIS_IP_1));
                 const operation = data[1];
                 await operation.promise();
 
@@ -473,7 +473,9 @@ async function robust(){
                         // External IP of the VM.
                         const metadata = await vm.getMetadata();
                         const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                        await postServer(name,ip,80);
+                        await postServer(name,ip,80).then(()=>{
+
+                        });
                     });
                 } catch (error) {
                     console.error(error);
@@ -490,7 +492,9 @@ async function robust(){
                         // External IP of the VM.
                         const metadata = await vm.getMetadata();
                         const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                        await postServer(name,ip,80);
+                        await postServer(name,ip,80).then(()=>{
+
+                        });
                     });
 
                 } catch (error) {
@@ -508,7 +512,9 @@ async function robust(){
                         // External IP of the VM.
                         const metadata = await vm.getMetadata();
                         const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                        await postServer(name,ip,80);
+                        await postServer(name,ip,80).then(()=>{
+
+                        });
                     });
                 } catch (error) {
                     console.error(error);
@@ -629,7 +635,7 @@ setInterval(robust, 60*1000);
 
 
 async function postServer(name,address,port){
-    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
+    await request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
@@ -649,13 +655,17 @@ async function postServer(name,address,port){
                     return console.error('failed:', err);
                 }
                 console.log('successful! \n'+httpResponse.body);
-                await commitTransaction(tID);
+                await commitTransaction(tID).then(()=>{
+                    return Promise.resolved('Done');
+                });
             });
         });
+    }).then(()=>{
+        return Promise.resolved('Done');
     });
 }
 async function deleteServer(name){
-    request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
+    await request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
@@ -674,19 +684,26 @@ async function deleteServer(name){
                 if (err) {
                     return console.error('failed:', err);
                 }
-                await commitTransaction(tID);
+                await commitTransaction(tID).then(()=>{
+                    return Promise.resolved('Done');
+                });
             });
         });
+    }).then(()=>{
+        return Promise.resolved('Done');
     });
 }
 async function commitTransaction(tID) {
-    request.put({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions/'+tID,
+    await request.put({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions/'+tID,
         auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
         }
         console.log('successful! \n'+httpResponse.body);
-    });
+        
+    }).then(()=>{
+        return Promise.resolved('Done');
+    })
 }
 
 app.listen(3000);
