@@ -466,14 +466,15 @@ async function robust(){
                 console.log("Missing webserver-1");
                 var name = 'web-server-1';
                 try{
-                    deleteServer(name);
-                    vm = zone.vm(name);
-                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                    await deleteServer(name).then(async ()=>{
+                        vm = zone.vm(name);
+                        await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
 
-                    // External IP of the VM.
-                    const metadata = await vm.getMetadata();
-                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                    postServer(name,ip,80);
+                        // External IP of the VM.
+                        const metadata = await vm.getMetadata();
+                        const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                        await postServer(name,ip,80);
+                    });
                 } catch (error) {
                     console.error(error);
                 }
@@ -482,14 +483,16 @@ async function robust(){
                 console.log("Missing webserver-2");
                 var name = 'web-server-2';
                 try{
-                    deleteServer(name);
-                    vm = zone.vm(name);
-                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                    await deleteServer(name).then(async ()=>{
+                        vm = zone.vm(name);
+                        await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
 
-                    // External IP of the VM.
-                    const metadata = await vm.getMetadata();
-                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                    postServer(name,ip,80);
+                        // External IP of the VM.
+                        const metadata = await vm.getMetadata();
+                        const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                        await postServer(name,ip,80);
+                    });
+
                 } catch (error) {
                     console.error(error);
                 }
@@ -498,14 +501,15 @@ async function robust(){
                 console.log("Missing webserver-3");
                 var name = 'web-server-3';
                 try{
-                    deleteServer(name);
-                    vm = zone.vm(name);
-                    await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
+                    await deleteServer(name).then(async ()=>{
+                        vm = zone.vm(name);
+                        await vm.create(instancesConfig.webServer(instancesConfig.THONK_IP_1, instancesConfig.THONK_IP_2, instancesConfig.THONK_IP_3, instancesConfig.REDIS_IP_1, instancesConfig.WEED_MASTER_IP_1, instancesConfig.WEED_MASTER_IP_2, instancesConfig.WEED_MASTER_IP_3));
 
-                    // External IP of the VM.
-                    const metadata = await vm.getMetadata();
-                    const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
-                    postServer(name,ip,80);
+                        // External IP of the VM.
+                        const metadata = await vm.getMetadata();
+                        const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                        await postServer(name,ip,80);
+                    });
                 } catch (error) {
                     console.error(error);
                 }
@@ -622,62 +626,62 @@ async function robust(){
 }
 setInterval(robust, 60*1000);
 
-function postServer(name,address,port){
+
+
+async function postServer(name,address,port){
     request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
-        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
         }
         var v = JSON.parse(httpResponse.body)._version;
         console.log('successful! \n'+v);
         request.post({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions?version='+v,
-            auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+            auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async  function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return console.error('failed:', err);
             }
             var tID = JSON.parse(httpResponse.body).id;
             console.log('successful! \n'+tID);
             request.post({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/servers?backend=My_Web_Servers&transaction_id='+tID,
-                auth: dataPlaneAPiAuth, body:{"name": name, "address": address, "port": port}, headers: dataPlaneAPIHeaders, json: true}, function optionalCallback(err, httpResponse, body) {
+                auth: dataPlaneAPiAuth, body:{"name": name, "address": address, "port": port}, headers: dataPlaneAPIHeaders, json: true}, async function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     return console.error('failed:', err);
                 }
                 console.log('successful! \n'+httpResponse.body);
-                commitTransaction(tID);
+                await commitTransaction(tID);
             });
         });
     });
 }
-
-function deleteServer(name){
+async function deleteServer(name){
     request.get({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/frontends',
-        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
         }
         var v = JSON.parse(httpResponse.body)._version;
         console.log('successful! \n'+v);
         request.post({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions?version='+v,
-            auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+            auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
             if (err) {
                 return console.error('failed:', err);
             }
             var tID = JSON.parse(httpResponse.body).id;
             console.log('successful! \n'+tID);
             request.delete({url: dataPlaneAPIHost +'/v1/services/haproxy/configuration/servers/'+name+'?backend=My_Web_Servers&transaction_id='+tID,
-                auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders, json: true}, function optionalCallback(err, httpResponse, body) {
+                auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders, json: true}, async function optionalCallback(err, httpResponse, body) {
                 if (err) {
                     return console.error('failed:', err);
                 }
-                commitTransaction(tID);
+                await commitTransaction(tID);
             });
         });
     });
 }
-
-function commitTransaction(tID) {
+async function commitTransaction(tID) {
     request.put({url: dataPlaneAPIHost +'/v1/services/haproxy/transactions/'+tID,
-        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, function optionalCallback(err, httpResponse, body) {
+        auth: dataPlaneAPiAuth, headers: dataPlaneAPIHeaders}, async function optionalCallback(err, httpResponse, body) {
         if (err) {
             return console.error('failed:', err);
         }
