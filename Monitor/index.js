@@ -460,6 +460,7 @@ async function robust() {
                         // External IP of the VM.
                         const metadata = await vm.getMetadata();
                         const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                        console.log("WebServer1 ip:"+ip);
                         await deleteAndPost(name, ip, 80);
                 } catch (error) {
                     console.error(error);
@@ -475,6 +476,7 @@ async function robust() {
                         // External IP of the VM.
                         const metadata = await vm.getMetadata();
                         const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                        console.log("WebServer2 ip:"+ip);
                         await deleteAndPost(name, ip, 80);
 
                 } catch (error) {
@@ -491,6 +493,7 @@ async function robust() {
                         // External IP of the VM.
                         const metadata = await vm.getMetadata();
                         const ip = metadata[0].networkInterfaces[0].accessConfigs[0].natIP;
+                        console.log("WebServer3 ip:"+ip);
                         await deleteAndPost(name, ip, 80);
                 } catch (error) {
                     console.error(error);
